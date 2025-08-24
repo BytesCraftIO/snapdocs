@@ -101,14 +101,74 @@ app.prepare().then(() => {
       console.log(`✅ User ${user.name} (${user.id}) joined room ${roomId}. Total users: ${room.size}`)
     })
 
-    // Handle content updates
-    socket.on('content-update', (data) => {
+    // Handle individual block updates (real-time)
+    socket.on('block-update', (data) => {
       if (!currentRoom) return
       
       const room = pageRooms.get(currentRoom)
       if (room && room.size > 1) {
-        console.log(`📝 Broadcasting content update in ${currentRoom} to ${room.size - 1} other users`)
-        socket.to(currentRoom).emit('content-updated', {
+        // Broadcast block update immediately to other users
+        socket.to(currentRoom).emit('block-updated', {
+          blockId: data.blockId,
+          content: data.content,
+          userId: data.userId,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    // Handle block addition
+    socket.on('block-add', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        socket.to(currentRoom).emit('block-added', {
+          block: data.block,
+          index: data.index,
+          userId: data.userId,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    // Handle block deletion
+    socket.on('block-delete', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        socket.to(currentRoom).emit('block-deleted', {
+          blockId: data.blockId,
+          userId: data.userId,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    // Handle block reorder
+    socket.on('block-reorder', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        socket.to(currentRoom).emit('block-reordered', {
+          blockId: data.blockId,
+          newIndex: data.newIndex,
+          userId: data.userId,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    // Handle full content sync (periodic)
+    socket.on('content-sync', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        console.log(`🔄 Syncing content in ${currentRoom}`)
+        socket.to(currentRoom).emit('content-synced', {
           blocks: data.blocks,
           userId: data.userId,
           timestamp: new Date().toISOString()

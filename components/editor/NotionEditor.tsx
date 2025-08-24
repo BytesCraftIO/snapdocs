@@ -11,6 +11,7 @@ import { pageContentService } from '@/lib/services/page-content'
 import { Save, Clock, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { useSocket } from '@/lib/socket/client'
 
 interface NotionEditorProps {
   pageId: string
@@ -20,6 +21,8 @@ interface NotionEditorProps {
   readOnly?: boolean
   autoSaveInterval?: number
   showSaveStatus?: boolean
+  userId?: string
+  onBlockUpdateReceived?: (blockId: string, content: any) => void
 }
 
 // Editor state reducer
@@ -77,9 +80,24 @@ export default function NotionEditor({
   onSave,
   onAutoSave,
   readOnly = false,
-  autoSaveInterval = 2000,
-  showSaveStatus = true
+  autoSaveInterval = 5000, // Increased to 5s for full saves
+  showSaveStatus = true,
+  userId,
+  onBlockUpdateReceived
 }: NotionEditorProps) {
+  const { 
+    sendBlockUpdate, 
+    sendBlockAdd, 
+    sendBlockDelete, 
+    sendBlockReorder, 
+    sendContentSync, 
+    onBlockUpdate, 
+    onBlockAdd, 
+    onBlockDelete, 
+    onBlockReorder, 
+    onContentSync, 
+    isConnected 
+  } = useSocket()
   const [editorState, dispatch] = useReducer(editorReducer, {
     blocks: initialBlocks,
     selectedBlockId: null,
@@ -174,7 +192,7 @@ export default function NotionEditor({
     }
   }, [blocks, onAutoSave, onSave, readOnly, saveStatus])
 
-  // Auto-save effect
+  // Auto-save effect (for persistent storage, less frequent)
   useEffect(() => {
     if (!readOnly && blocks.length > 0 && !isProcessingRemoteUpdate.current) {
       // Only check for changes if we're not processing a remote update
@@ -200,6 +218,17 @@ export default function NotionEditor({
       }
     }
   }, [blocks, performAutoSave, autoSaveInterval, readOnly])
+  
+  // Send full content sync periodically (every 10 seconds)
+  useEffect(() => {
+    if (!readOnly && isConnected && userId && blocks.length > 0) {
+      const syncInterval = setInterval(() => {
+        sendContentSync(pageId, blocks, userId)
+      }, 10000) // Sync every 10 seconds
+      
+      return () => clearInterval(syncInterval)
+    }
+  }, [blocks, isConnected, userId, pageId, readOnly, sendContentSync])
 
   // We'll initialize with empty block after addBlock is defined
 
@@ -274,10 +303,15 @@ export default function NotionEditor({
       payload: { block: newBlock, index: insertIndex }
     })
     
+    // Send real-time block addition
+    if (!readOnly && isConnected && userId) {
+      sendBlockAdd(pageId, newBlock, insertIndex, userId)
+    }
+    
     setShowSlashMenu(false)
     
     return newBlock.id
-  }, [blocks])
+  }, [blocks, readOnly, isConnected, userId, pageId, sendBlockAdd])
 
   // Track if we've initialized an empty block
   const hasInitializedRef = useRef(false)
@@ -290,12 +324,176 @@ export default function NotionEditor({
     }
   }, [blocks.length, readOnly, editorState.isLoading, addBlock])
 
+  // Debounce helper
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Debounced function to send block updates via WebSocket
+  const sendBlockUpdateDebounced = useCallback((blockId: string, content: any) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      if (isConnected && userId) {
+        sendBlockUpdate(pageId, blockId, content, userId)
+      }
+    }, 100) // Send updates after 100ms of no typing
+  }, [isConnected, userId, sendBlockUpdate, pageId])
+  
   const updateBlock = useCallback((blockId: string, updates: Partial<BlockType>) => {
+    // Update local state immediately
     dispatch({
       type: 'UPDATE_BLOCK',
       payload: { id: blockId, updates }
     })
-  }, [])
+    
+    // Send real-time update via WebSocket for any changes
+    if (!readOnly) {
+      sendBlockUpdateDebounced(blockId, updates)
+    }
+  }, [readOnly, sendBlockUpdateDebounced])
+  
+  // Listen for block updates from other users
+  useEffect(() => {
+    if (!onBlockUpdate) return
+    
+    const cleanup = onBlockUpdate((data: { blockId: string; content: any; userId: string }) => {
+      // Don't apply updates from ourselves
+      if (data.userId === userId) return
+      
+      // Mark as processing remote update to prevent auto-save
+      isProcessingRemoteUpdate.current = true
+      
+      // Update the specific block
+      dispatch({
+        type: 'UPDATE_BLOCK',
+        payload: {
+          id: data.blockId,
+          updates: data.content // This is the full updates object now
+        }
+      })
+      
+      // Reset flag after processing
+      setTimeout(() => {
+        isProcessingRemoteUpdate.current = false
+      }, 100)
+      
+      // Notify parent component if needed
+      onBlockUpdateReceived?.(data.blockId, data.content)
+    })
+    
+    return cleanup
+  }, [onBlockUpdate, userId, onBlockUpdateReceived])
+  
+  // Listen for block additions from other users
+  useEffect(() => {
+    if (!onBlockAdd) return
+    
+    const cleanup = onBlockAdd((data: { block: BlockType; index: number; userId: string }) => {
+      // Don't apply additions from ourselves
+      if (data.userId === userId) return
+      
+      // Mark as processing remote update
+      isProcessingRemoteUpdate.current = true
+      
+      // Add the block at the specified index
+      dispatch({
+        type: 'ADD_BLOCK',
+        payload: {
+          block: data.block,
+          index: data.index
+        }
+      })
+      
+      // Reset flag after processing
+      setTimeout(() => {
+        isProcessingRemoteUpdate.current = false
+      }, 100)
+    })
+    
+    return cleanup
+  }, [onBlockAdd, userId])
+  
+  // Listen for block deletions from other users
+  useEffect(() => {
+    if (!onBlockDelete) return
+    
+    const cleanup = onBlockDelete((data: { blockId: string; userId: string }) => {
+      // Don't apply deletions from ourselves
+      if (data.userId === userId) return
+      
+      // Mark as processing remote update
+      isProcessingRemoteUpdate.current = true
+      
+      // Delete the block
+      dispatch({
+        type: 'DELETE_BLOCK',
+        payload: data.blockId
+      })
+      
+      // Reset flag after processing
+      setTimeout(() => {
+        isProcessingRemoteUpdate.current = false
+      }, 100)
+    })
+    
+    return cleanup
+  }, [onBlockDelete, userId])
+  
+  // Listen for block reorders from other users
+  useEffect(() => {
+    if (!onBlockReorder) return
+    
+    const cleanup = onBlockReorder((data: { blockId: string; newIndex: number; userId: string }) => {
+      // Don't apply reorders from ourselves
+      if (data.userId === userId) return
+      
+      // Mark as processing remote update
+      isProcessingRemoteUpdate.current = true
+      
+      // Reorder the block
+      dispatch({
+        type: 'MOVE_BLOCK',
+        payload: {
+          id: data.blockId,
+          newIndex: data.newIndex
+        }
+      })
+      
+      // Reset flag after processing
+      setTimeout(() => {
+        isProcessingRemoteUpdate.current = false
+      }, 100)
+    })
+    
+    return cleanup
+  }, [onBlockReorder, userId])
+  
+  // Listen for full content syncs
+  useEffect(() => {
+    if (!onContentSync) return
+    
+    const cleanup = onContentSync((data: { blocks: BlockType[]; userId: string }) => {
+      // Don't apply syncs from ourselves
+      if (data.userId === userId) return
+      
+      // Mark as processing remote update
+      isProcessingRemoteUpdate.current = true
+      
+      // Full sync - replace all blocks
+      dispatch({
+        type: 'SET_BLOCKS',
+        payload: data.blocks
+      })
+      
+      // Reset flag after processing
+      setTimeout(() => {
+        isProcessingRemoteUpdate.current = false
+      }, 500)
+    })
+    
+    return cleanup
+  }, [onContentSync, userId])
 
   const deleteBlock = useCallback((blockId: string) => {
     if (blocks.length <= 1) {
@@ -306,8 +504,13 @@ export default function NotionEditor({
         type: 'DELETE_BLOCK',
         payload: blockId
       })
+      
+      // Send real-time block deletion
+      if (!readOnly && isConnected && userId) {
+        sendBlockDelete(pageId, blockId, userId)
+      }
     }
-  }, [blocks.length, updateBlock])
+  }, [blocks.length, updateBlock, readOnly, isConnected, userId, pageId, sendBlockDelete])
 
   const handleDragStart = (event: any) => {
     const block = blocks.find(b => b.id === event.active.id)
@@ -327,6 +530,11 @@ export default function NotionEditor({
           type: 'MOVE_BLOCK',
           payload: { id: active.id as string, newIndex }
         })
+        
+        // Send real-time block reorder
+        if (!readOnly && isConnected && userId) {
+          sendBlockReorder(pageId, active.id as string, newIndex, userId)
+        }
       }
     }
   }

@@ -65,7 +65,7 @@ interface PageEditorProps {
 
 export default function PageEditorV2({ page, initialContent, user }: PageEditorProps) {
   const router = useRouter()
-  const { socket, isConnected, joinPage, leavePage, sendContentUpdate } = useSocket()
+  const { isConnected, joinPage, leavePage } = useSocket()
   const [title, setTitle] = useState(page.title || '')
   const [icon, setIcon] = useState(page.icon || '')
   const [coverImage, setCoverImage] = useState(page.coverImage || '')
@@ -73,10 +73,6 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(page.updatedAt)
-  const [blocks, setBlocks] = useState<Block[]>(initialContent?.blocks || [])
-  const [remoteUpdate, setRemoteUpdate] = useState(0)
-  const lastBroadcastRef = useRef<string>('')
-  const isReceivingUpdate = useRef(false)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -99,33 +95,6 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
     }
   }, [isConnected, page.id, page.workspaceId, user, joinPage, leavePage])
 
-  // Listen for content updates from other users
-  useEffect(() => {
-    if (!socket) return
-
-    const handleContentUpdated = (data: { blocks: Block[], userId: string, timestamp: string }) => {
-      // Only process updates from other users
-      if (data.userId !== user?.id) {
-        console.log('Received content update from user:', data.userId)
-        isReceivingUpdate.current = true
-        setRemoteUpdate(prev => prev + 1)
-        setBlocks(data.blocks)
-        setLastUpdated(data.timestamp)
-        
-        // Don't show toast for every update - it's distracting
-        // Only show for significant changes
-        setTimeout(() => {
-          isReceivingUpdate.current = false
-        }, 500)
-      }
-    }
-
-    socket.on('content-updated', handleContentUpdated)
-
-    return () => {
-      socket.off('content-updated', handleContentUpdated)
-    }
-  }, [socket, user?.id])
 
   // Auto-resize title textarea
   useEffect(() => {
@@ -177,29 +146,9 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
     return () => clearTimeout(timeoutId)
   }, [title, page.title, saveTitle])
 
-  // Auto-save page content and broadcast to other users
+  // Auto-save page content
   const handleAutoSave = useCallback(async (newBlocks: Block[]) => {
-    // Don't save if we're receiving an update from another user
-    if (isReceivingUpdate.current) {
-      console.log('Skipping save - receiving remote update')
-      return
-    }
-    
-    // Check if content actually changed by comparing serialized blocks
-    const serializedBlocks = JSON.stringify(newBlocks)
-    if (serializedBlocks === lastBroadcastRef.current) {
-      console.log('Skipping save - no actual changes')
-      return
-    }
-    
     setIsSaving(true)
-    setBlocks(newBlocks)
-    
-    // Broadcast to other users immediately if content changed
-    if (user && serializedBlocks !== lastBroadcastRef.current) {
-      sendContentUpdate(page.id, newBlocks, user.id)
-      lastBroadcastRef.current = serializedBlocks
-    }
     
     try {
       const response = await fetch(`/api/pages/${page.id}/content`, {
@@ -212,8 +161,10 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
         }),
       })
 
+      const data = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Failed to save content')
+        throw new Error(data.error || 'Failed to save content')
       }
       
       // Update the last updated timestamp
@@ -225,7 +176,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
     } finally {
       setIsSaving(false)
     }
-  }, [page.id, user, sendContentUpdate])
+  }, [page.id])
 
   const handleAddIcon = () => {
     // For now, just set a random emoji
@@ -332,6 +283,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
   const handleRefresh = () => {
     router.refresh()
   }
+  
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#191919]">
@@ -370,12 +322,12 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
           {/* Editor */}
           <div className="mt-2">
             <NotionEditor
-              key={`editor-${remoteUpdate}`}
               pageId={page.id}
-              initialBlocks={blocks.length > 0 ? blocks : initialBlocks}
+              initialBlocks={initialBlocks}
               onAutoSave={handleAutoSave}
               showSaveStatus={false}
               autoSaveInterval={2000}
+              userId={user?.id}
             />
           </div>
         </div>

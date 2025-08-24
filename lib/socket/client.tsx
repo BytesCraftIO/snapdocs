@@ -11,11 +11,20 @@ interface SocketContextType {
   currentPageId: string | null
   joinPage: (pageId: string, workspaceId: string, user: any) => void
   leavePage: () => void
-  sendContentUpdate: (pageId: string, blocks: any[], userId: string) => void
+  sendBlockUpdate: (pageId: string, blockId: string, content: any, userId: string) => void
+  sendBlockAdd: (pageId: string, block: any, index: number, userId: string) => void
+  sendBlockDelete: (pageId: string, blockId: string, userId: string) => void
+  sendBlockReorder: (pageId: string, blockId: string, newIndex: number, userId: string) => void
+  sendContentSync: (pageId: string, blocks: any[], userId: string) => void
   sendCursorPosition: (pageId: string, position: { x: number; y: number }) => void
   sendSelection: (pageId: string, selection: { start: number; end: number } | null) => void
   sendTypingStart: (pageId: string, blockId: string) => void
   sendTypingStop: (pageId: string, blockId: string) => void
+  onBlockUpdate?: (callback: (data: any) => void) => void
+  onBlockAdd?: (callback: (data: any) => void) => void
+  onBlockDelete?: (callback: (data: any) => void) => void
+  onBlockReorder?: (callback: (data: any) => void) => void
+  onContentSync?: (callback: (data: any) => void) => void
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -25,11 +34,20 @@ const SocketContext = createContext<SocketContextType>({
   currentPageId: null,
   joinPage: () => {},
   leavePage: () => {},
-  sendContentUpdate: () => {},
+  sendBlockUpdate: () => {},
+  sendBlockAdd: () => {},
+  sendBlockDelete: () => {},
+  sendBlockReorder: () => {},
+  sendContentSync: () => {},
   sendCursorPosition: () => {},
   sendSelection: () => {},
   sendTypingStart: () => {},
   sendTypingStop: () => {},
+  onBlockUpdate: () => {},
+  onBlockAdd: () => {},
+  onBlockDelete: () => {},
+  onBlockReorder: () => {},
+  onContentSync: () => {},
 })
 
 export function SocketProvider({ children }: { children: ReactNode }) {
@@ -132,16 +150,111 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     setCurrentPageId(null)
     // Socket will automatically leave rooms on disconnect
   }, [])
-
-  const lastContentUpdate = useRef<string>('')
   
-  const sendContentUpdate = useCallback((pageId: string, blocks: any[], userId: string) => {
+  // Send individual block updates (real-time)
+  const sendBlockUpdate = useCallback((pageId: string, blockId: string, content: any, userId: string) => {
     if (socket && socket.connected) {
-      // Only send if content actually changed
-      const contentHash = JSON.stringify({ pageId, blocks, userId })
-      if (contentHash !== lastContentUpdate.current) {
-        socket.emit('content-update', { pageId, blocks, userId })
-        lastContentUpdate.current = contentHash
+      socket.emit('block-update', { 
+        pageId, 
+        blockId, 
+        content, 
+        userId 
+      })
+    }
+  }, [socket])
+  
+  // Send block addition
+  const sendBlockAdd = useCallback((pageId: string, block: any, index: number, userId: string) => {
+    if (socket && socket.connected) {
+      socket.emit('block-add', { 
+        pageId, 
+        block, 
+        index, 
+        userId 
+      })
+    }
+  }, [socket])
+  
+  // Send block deletion
+  const sendBlockDelete = useCallback((pageId: string, blockId: string, userId: string) => {
+    if (socket && socket.connected) {
+      socket.emit('block-delete', { 
+        pageId, 
+        blockId, 
+        userId 
+      })
+    }
+  }, [socket])
+  
+  // Send block reorder
+  const sendBlockReorder = useCallback((pageId: string, blockId: string, newIndex: number, userId: string) => {
+    if (socket && socket.connected) {
+      socket.emit('block-reorder', { 
+        pageId, 
+        blockId, 
+        newIndex, 
+        userId 
+      })
+    }
+  }, [socket])
+  
+  // Send full content sync (less frequent)
+  const sendContentSync = useCallback((pageId: string, blocks: any[], userId: string) => {
+    if (socket && socket.connected) {
+      socket.emit('content-sync', { 
+        pageId, 
+        blocks, 
+        userId 
+      })
+    }
+  }, [socket])
+  
+  // Register block update listener
+  const onBlockUpdate = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('block-updated', callback)
+      return () => {
+        socket.off('block-updated', callback)
+      }
+    }
+  }, [socket])
+  
+  // Register block add listener
+  const onBlockAdd = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('block-added', callback)
+      return () => {
+        socket.off('block-added', callback)
+      }
+    }
+  }, [socket])
+  
+  // Register block delete listener
+  const onBlockDelete = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('block-deleted', callback)
+      return () => {
+        socket.off('block-deleted', callback)
+      }
+    }
+  }, [socket])
+  
+  // Register block reorder listener
+  const onBlockReorder = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('block-reordered', callback)
+      return () => {
+        socket.off('block-reordered', callback)
+      }
+    }
+  }, [socket])
+  
+  // Register content sync listener
+  const onContentSync = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('content-synced', callback)
+      return () => {
+        socket.off('content-synced', callback)
       }
     }
   }, [socket])
@@ -178,11 +291,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       currentPageId,
       joinPage,
       leavePage,
-      sendContentUpdate,
+      sendBlockUpdate,
+      sendBlockAdd,
+      sendBlockDelete,
+      sendBlockReorder,
+      sendContentSync,
       sendCursorPosition,
       sendSelection,
       sendTypingStart,
-      sendTypingStop
+      sendTypingStop,
+      onBlockUpdate,
+      onBlockAdd,
+      onBlockDelete,
+      onBlockReorder,
+      onContentSync
     }}>
       {children}
     </SocketContext.Provider>

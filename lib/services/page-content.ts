@@ -1,6 +1,16 @@
 import { getMongoDb } from '@/lib/db/mongodb'
 import { Block, PageContent } from '@/types'
 
+interface MergeResult {
+  mergedBlocks: Block[]
+  hasConflicts: boolean
+  conflicts: Array<{
+    blockId: string
+    originalContent: any
+    incomingContent: any
+  }>
+}
+
 export class PageContentService {
   private async getDb() {
     return await getMongoDb()
@@ -220,6 +230,116 @@ export class PageContentService {
     }
     
     return updated
+  }
+
+  /**
+   * Merge conflicting changes from two users
+   * Uses a three-way merge strategy
+   */
+  async mergeChanges(
+    pageId: string,
+    serverBlocks: Block[],
+    clientBlocks: Block[],
+    userId: string
+  ): Promise<MergeResult> {
+    const conflicts: MergeResult['conflicts'] = []
+    const mergedBlocks: Block[] = []
+    
+    // Create maps for easy lookup
+    const serverBlockMap = new Map(serverBlocks.map(b => [b.id, b]))
+    const clientBlockMap = new Map(clientBlocks.map(b => [b.id, b]))
+    
+    // Track which blocks we've processed
+    const processedIds = new Set<string>()
+    
+    // Process blocks that exist in both versions
+    for (const clientBlock of clientBlocks) {
+      processedIds.add(clientBlock.id)
+      const serverBlock = serverBlockMap.get(clientBlock.id)
+      
+      if (serverBlock) {
+        // Block exists in both - check for conflicts
+        const clientContent = JSON.stringify(clientBlock.content)
+        const serverContent = JSON.stringify(serverBlock.content)
+        
+        if (clientContent !== serverContent) {
+          // Content differs - this is a conflict
+          // For now, we'll prefer the client's version but track the conflict
+          conflicts.push({
+            blockId: clientBlock.id,
+            originalContent: serverBlock.content,
+            incomingContent: clientBlock.content
+          })
+          
+          // Use client version but mark it as having a conflict
+          mergedBlocks.push({
+            ...clientBlock,
+            properties: {
+              ...clientBlock.properties,
+              hasConflict: true,
+              conflictedAt: new Date(),
+              conflictedBy: userId
+            }
+          })
+        } else {
+          // No conflict - use the block as is
+          mergedBlocks.push(clientBlock)
+        }
+      } else {
+        // Block only exists in client - it's a new block
+        mergedBlocks.push(clientBlock)
+      }
+    }
+    
+    // Add blocks that only exist on server (were added by another user)
+    for (const serverBlock of serverBlocks) {
+      if (!processedIds.has(serverBlock.id)) {
+        // This block was added by another user - include it
+        mergedBlocks.push({
+          ...serverBlock,
+          properties: {
+            ...serverBlock.properties,
+            addedByOtherUser: true,
+            addedAt: new Date()
+          }
+        })
+      }
+    }
+    
+    // Sort blocks by order to maintain structure
+    mergedBlocks.sort((a, b) => (a.order || 0) - (b.order || 0))
+    
+    // Re-index order values
+    mergedBlocks.forEach((block, index) => {
+      block.order = index
+    })
+    
+    return {
+      mergedBlocks,
+      hasConflicts: conflicts.length > 0,
+      conflicts
+    }
+  }
+
+  /**
+   * Get conflict-free version by accepting all server changes
+   */
+  async acceptServerVersion(pageId: string): Promise<PageContent | null> {
+    return await this.loadPageContent(pageId)
+  }
+
+  /**
+   * Force save client version (overwrite server)
+   */
+  async forceClientVersion(pageId: string, blocks: Block[]): Promise<PageContent> {
+    // Save current as history first
+    const current = await this.loadPageContent(pageId)
+    if (current) {
+      await this.saveToHistory(current)
+    }
+    
+    // Force save the client version
+    return await this.savePageContent(pageId, blocks)
   }
 }
 

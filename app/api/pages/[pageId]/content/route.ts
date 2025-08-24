@@ -122,13 +122,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Save existing content to history before updating
-    const existingContent = await pageContentService.loadPageContent(pageId)
-    if (existingContent) {
-      await pageContentService.saveToHistory(existingContent)
-    }
-
-    // Save new content
+    // Save content immediately (optimized for real-time collaboration)
     const savedContent = await pageContentService.savePageContent(pageId, blocks)
 
     // Update page metadata in PostgreSQL
