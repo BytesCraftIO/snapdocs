@@ -88,7 +88,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
     
     try {
       const response = await fetch(`/api/pages/${page.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
