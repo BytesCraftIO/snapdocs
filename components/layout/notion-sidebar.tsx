@@ -33,9 +33,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Separator } from "@/components/ui/separator"
 import { signOut } from "next-auth/react"
 import { CreateWorkspaceModal } from "@/components/workspace/create-workspace-modal"
 import { SearchDialog } from "@/components/search/SearchDialog"
+import { SettingsModal } from "@/components/settings/SettingsModal"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
 
@@ -62,6 +64,7 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
   const [isCreatingPage, setIsCreatingPage] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -291,7 +294,11 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
             }
             onClick={() => setShowSearchDialog(true)} 
           />
-          <SidebarItem icon={<Settings />} label="Settings" onClick={() => {}} />
+          <SidebarItem 
+            icon={<Settings />} 
+            label="Settings & members" 
+            onClick={() => setSettingsOpen(true)}
+          />
           <SidebarItem 
             icon={<Plus />} 
             label="New page" 
@@ -393,6 +400,12 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
           workspaceId={currentWorkspace.id}
         />
       )}
+      
+      <SettingsModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        user={user}
+      />
     </>
   )
 }
