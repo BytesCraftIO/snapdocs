@@ -100,12 +100,15 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
       if (!response.ok) {
         throw new Error('Failed to save title')
       }
+      
+      // Refresh the router to update the sidebar
+      router.refresh()
     } catch (error) {
       console.error('Error saving title:', error)
       toast.error('Failed to save title')
       setTitle(page.title || '')
     }
-  }, [page.id, page.title])
+  }, [page.id, page.title, router])
 
   // Debounced title save
   useEffect(() => {

@@ -53,6 +53,7 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isCreatingPage, setIsCreatingPage] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   // Fetch workspaces
   useEffect(() => {
     async function fetchWorkspaces() {
@@ -82,7 +83,7 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
     fetchWorkspaces()
   }, [pathname])
 
-  // Fetch pages
+  // Fetch pages - refetch when workspace or pathname changes
   useEffect(() => {
     async function fetchPages() {
       if (!currentWorkspace) {
@@ -106,7 +107,12 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
     }
 
     fetchPages()
-  }, [currentWorkspace])
+    
+    // Set up an interval to refresh pages every 2 seconds for real-time updates
+    const interval = setInterval(fetchPages, 2000)
+    
+    return () => clearInterval(interval)
+  }, [currentWorkspace, pathname, refreshKey])
 
   const handleWorkspaceChange = (workspace: Workspace) => {
     setCurrentWorkspace(workspace)
@@ -386,7 +392,7 @@ function RecursivePageItem({
         // Navigate to the new page
         router.push(`/workspace/${workspaceId}/page/${newPage.id}`)
         
-        // Refresh the sidebar
+        // Trigger a refresh
         router.refresh()
       }
     } catch (error) {
