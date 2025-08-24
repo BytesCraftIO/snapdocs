@@ -8,7 +8,6 @@ import { NotionPageHeader } from '@/components/page/notion-page-header'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { useSocket } from '@/lib/socket/client'
-import { ActiveUsers } from '@/components/collaboration/ActiveUsers'
 
 // Dynamically import NotionEditor to avoid SSR hydration issues with DnD
 const NotionEditor = dynamic(
@@ -66,7 +65,7 @@ interface PageEditorProps {
 
 export default function PageEditorV2({ page, initialContent, user }: PageEditorProps) {
   const router = useRouter()
-  const { socket, isConnected, currentUsers, joinPage, leavePage, sendContentUpdate } = useSocket()
+  const { socket, isConnected, joinPage, leavePage, sendContentUpdate } = useSocket()
   const [title, setTitle] = useState(page.title || '')
   const [icon, setIcon] = useState(page.icon || '')
   const [coverImage, setCoverImage] = useState(page.coverImage || '')
@@ -336,13 +335,6 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#191919]">
-      {/* Active users indicator */}
-      {isConnected && (
-        <div className="fixed top-4 right-4 z-50">
-          <ActiveUsers />
-        </div>
-      )}
-      
       {/* Notion-style Page Header */}
       <NotionPageHeader 
         page={{...page, icon, coverImage, updatedAt: lastUpdated}} 
