@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import {Trash2} from "lucide-react"
+
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { User } from "@prisma/client"
@@ -15,6 +15,7 @@ import {
   Settings,
   ChevronsLeft,
   Trash,
+  Trash2,
   FileText,
   Hash,
   Calendar,
@@ -279,6 +280,11 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
         <ScrollArea className="flex-1 px-2">
           <div className="space-y-0.5 pb-2">
             <SidebarItem icon={<Inbox />} label="Inbox" onClick={() => {}} />
+            <SidebarItem 
+              icon={<Trash2 />} 
+              label="Trash" 
+              onClick={() => router.push(`/workspace/${currentWorkspace?.id}/trash`)}
+            />
             
             <div className="pt-3 pb-1">
               <div className="flex items-center justify-between px-2 py-1">
@@ -314,9 +320,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
               </div>
             )}
 
-            <div className="pt-3">
-              <SidebarItem icon={<Trash2 />} label="Trash" onClick={() => {}} />
-            </div>
           </div>
         </ScrollArea>
 
@@ -450,7 +453,7 @@ function RecursivePageItem({
   }
 
   const handleDeletePage = async () => {
-    if (!confirm(`Are you sure you want to delete "${page.title}"?`)) {
+    if (!confirm(`Move "${page.title}" to trash? You can restore it later from the trash.`)) {
       return
     }
 
@@ -473,7 +476,7 @@ function RecursivePageItem({
       }
     } catch (error) {
       console.error('Error deleting page:', error)
-      toast.error('Failed to delete page')
+      toast.error('Failed to move page to trash')
     }
   }
 
