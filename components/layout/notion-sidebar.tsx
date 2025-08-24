@@ -53,8 +53,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isCreatingPage, setIsCreatingPage] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set())
-
   // Fetch workspaces
   useEffect(() => {
     async function fetchWorkspaces() {
@@ -153,15 +151,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
     }
   }
 
-  const togglePageExpanded = (pageId: string) => {
-    const newExpanded = new Set(expandedPages)
-    if (newExpanded.has(pageId)) {
-      newExpanded.delete(pageId)
-    } else {
-      newExpanded.add(pageId)
-    }
-    setExpandedPages(newExpanded)
-  }
 
   if (collapsed) {
     return (
@@ -281,14 +270,11 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
             ) : (
               <div className="space-y-0">
                 {pages.map((page) => (
-                  <PageItem 
+                  <RecursivePageItem 
                     key={page.id} 
                     page={page} 
                     workspaceId={currentWorkspace?.id || ''}
                     level={0}
-                    expanded={expandedPages.has(page.id)}
-                    onToggleExpand={() => togglePageExpanded(page.id)}
-                    onCreateSubpage={() => handleCreatePage(page.id)}
                   />
                 ))}
               </div>
@@ -355,26 +341,61 @@ function SidebarItem({
   )
 }
 
-function PageItem({ 
+// Recursive page item component that manages its own expand state
+function RecursivePageItem({ 
   page, 
   workspaceId, 
-  level = 0,
-  expanded,
-  onToggleExpand,
-  onCreateSubpage
+  level = 0
 }: { 
   page: any
   workspaceId: string
   level?: number
-  expanded: boolean
-  onToggleExpand: () => void
-  onCreateSubpage: () => void
 }) {
   const pathname = usePathname()
   const router = useRouter()
+  const [expanded, setExpanded] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   const hasChildren = page.children && page.children.length > 0
   const isActive = pathname === `/workspace/${workspaceId}/page/${page.id}`
   const [showActions, setShowActions] = useState(false)
+
+  const handleCreateSubpage = async () => {
+    if (isCreating) return
+    
+    setIsCreating(true)
+    try {
+      const response = await fetch('/api/pages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: 'Untitled',
+          workspaceId: workspaceId,
+          parentId: page.id
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const newPage = data.page || data
+        
+        // Expand the parent to show the new page
+        setExpanded(true)
+        
+        // Navigate to the new page
+        router.push(`/workspace/${workspaceId}/page/${newPage.id}`)
+        
+        // Refresh the sidebar
+        router.refresh()
+      }
+    } catch (error) {
+      console.error('Error creating sub-page:', error)
+      toast.error('Failed to create sub-page')
+    } finally {
+      setIsCreating(false)
+    }
+  }
 
   return (
     <div>
@@ -392,7 +413,7 @@ function PageItem({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            if (hasChildren) onToggleExpand()
+            if (hasChildren) setExpanded(!expanded)
           }}
           className={cn(
             "p-0.5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747] rounded-sm",
@@ -418,8 +439,9 @@ function PageItem({
               className="h-5 w-5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747]"
               onClick={(e) => {
                 e.stopPropagation()
-                onCreateSubpage()
+                handleCreateSubpage()
               }}
+              disabled={isCreating}
             >
               <Plus className="h-3 w-3" />
             </Button>
@@ -447,14 +469,11 @@ function PageItem({
       {hasChildren && expanded && (
         <div>
           {page.children.map((child: any) => (
-            <PageItem 
+            <RecursivePageItem
               key={child.id} 
               page={child} 
               workspaceId={workspaceId}
               level={level + 1}
-              expanded={false}
-              onToggleExpand={() => {}}
-              onCreateSubpage={() => {}}
             />
           ))}
         </div>
@@ -462,3 +481,4 @@ function PageItem({
     </div>
   )
 }
+

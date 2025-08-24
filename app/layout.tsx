@@ -9,6 +9,11 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Notion Clone',
   description: 'A full-featured Notion clone built with Next.js',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
