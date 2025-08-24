@@ -42,6 +42,7 @@ import { SearchDialog } from "@/components/search/SearchDialog"
 import { SettingsModal } from "@/components/settings/SettingsModal"
 import { AvatarUpload } from "@/components/ui/avatar-upload"
 import { NotificationInbox } from "@/components/inbox/NotificationInbox"
+import NotificationBell from "@/components/notifications/NotificationBell"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
 
@@ -307,14 +308,17 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 hover:bg-[#e5e5e4] dark:hover:bg-[#373737]"
-            onClick={() => setCollapsed(true)}
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 hover:bg-[#e5e5e4] dark:hover:bg-[#373737]"
+              onClick={() => setCollapsed(true)}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Quick Actions */}

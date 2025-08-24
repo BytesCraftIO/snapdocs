@@ -45,19 +45,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // Create a notification (you might want to create a Notification model in your schema)
-    // For now, we'll create an activity log entry
-    await prisma.activityLog.create({
+    // Create a notification using the Notification model
+    const notification = await prisma.notification.create({
       data: {
         type: 'MENTION',
-        userId: mentionedUser.id,
+        title: 'New mention',
+        message: `${currentUser.name || currentUser.email} mentioned you in "${page.title || 'Untitled'}"`,
+        recipientId: mentionedUser.id,
+        mentionedById: currentUser.id,
         pageId,
         workspaceId,
+        read: false,
         metadata: {
-          mentionedBy: currentUser.name || currentUser.email,
-          mentionedById: currentUser.id,
           pageTitle: page.title,
-          message: `${currentUser.name || currentUser.email} ${message}`
+          mentionedByName: currentUser.name || currentUser.email
         }
       }
     })
