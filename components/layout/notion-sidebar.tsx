@@ -14,9 +14,12 @@ import {
   Search,
   Settings,
   ChevronsLeft,
+  MoreHorizontal,
   Trash,
   Trash2,
   Star,
+  Copy,
+  ArrowRight,
   FileText,
   Hash,
   Calendar,
@@ -463,6 +466,7 @@ function RecursivePageItem({
   const [isCreating, setIsCreating] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [isFavorite, setIsFavorite] = useState(page.isFavorite || false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   
   // Auto-expand if a child becomes active
   useEffect(() => {
@@ -610,19 +614,10 @@ function RecursivePageItem({
         
         {/* Actions */}
         {showActions && (
-          <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747]"
-              onClick={handleToggleFavorite}
-              title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            >
-              <Star className={cn(
-                "h-3 w-3",
-                isFavorite && "fill-yellow-500 text-yellow-500"
-              )} />
-            </Button>
+          <div className={cn(
+            "flex-shrink-0 flex items-center gap-0.5 ml-1 transition-opacity",
+            dropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}>
             <Button
               variant="ghost"
               size="icon"
@@ -635,17 +630,70 @@ function RecursivePageItem({
             >
               <Plus className="h-3 w-3" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747]"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDeletePage()
-              }}
-            >
-              <Trash className="h-3 w-3" />
-            </Button>
+            <DropdownMenu modal={false} open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="end" 
+                side="right" 
+                className="w-48 z-50"
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleToggleFavorite(e)
+                    setDropdownOpen(false)
+                  }}
+                >
+                  <Star className={cn(
+                    "mr-2 h-3 w-3",
+                    isFavorite && "fill-yellow-500 text-yellow-500"
+                  )} />
+                  {isFavorite ? "Remove from favorites" : "Add to favorites"}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    console.log('Duplicate clicked')
+                    setDropdownOpen(false)
+                  }}
+                >
+                  <Copy className="mr-2 h-3 w-3" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    console.log('Move to clicked')
+                    setDropdownOpen(false)
+                  }}
+                >
+                  <ArrowRight className="mr-2 h-3 w-3" />
+                  Move to
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeletePage()
+                    setDropdownOpen(false)
+                  }}
+                  className="text-red-600 dark:text-red-400"
+                >
+                  <Trash className="mr-2 h-3 w-3" />
+                  Move to trash
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
