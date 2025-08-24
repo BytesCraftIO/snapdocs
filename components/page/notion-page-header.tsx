@@ -33,11 +33,13 @@ import {
   Copy,
   Move,
   Plus,
-  X
+  X,
+  Bell
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { cn } from "@/lib/utils"
 import { ActiveUsers } from "@/components/collaboration/ActiveUsers"
+import { NotificationInbox } from "@/components/inbox/NotificationInbox"
 
 interface NotionPageHeaderProps {
   page: any
@@ -59,7 +61,29 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
   const [hoveredAddIcon, setHoveredAddIcon] = useState(false)
   const [hoveredAddCover, setHoveredAddCover] = useState(false)
   const [isFavorite, setIsFavorite] = useState(page.isFavorite || false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [editedTime, setEditedTime] = useState("")
+
+  // Fetch unread notifications count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/notifications?unread=true')
+        if (response.ok) {
+          const data = await response.json()
+          setUnreadCount(data.unreadCount || 0)
+        }
+      } catch (error) {
+        console.error('Error fetching unread count:', error)
+      }
+    }
+    
+    fetchUnreadCount()
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Format the edited time
   const formatEditedTime = (date: string | Date) => {
@@ -332,6 +356,21 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
               <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
                 Share
               </button>
+            <button 
+              className="hover:bg-[#37352f0a] px-2 py-1 rounded relative"
+              onClick={() => {
+                console.log('Opening notifications...')
+                setShowNotifications(true)
+              }}
+              title="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
             <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
               <MessageSquare className="h-4 w-4" />
             </button>
@@ -444,6 +483,26 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+      {/* Notification Inbox */}
+      <NotificationInbox 
+        isOpen={showNotifications} 
+        onClose={() => {
+          setShowNotifications(false)
+          // Refresh unread count after closing
+          setTimeout(async () => {
+            try {
+              const response = await fetch('/api/notifications?unread=true')
+              if (response.ok) {
+                const data = await response.json()
+                setUnreadCount(data.unreadCount || 0)
+              }
+            } catch (error) {
+              console.error('Error fetching unread count:', error)
+            }
+          }, 500)
+        }} 
+      />
     </>
   )
 }

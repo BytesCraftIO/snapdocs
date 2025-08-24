@@ -26,6 +26,8 @@ model User {
   comments      Comment[]
   activities    Activity[]
   permissions   Permission[]
+  notifications Notification[]     @relation("NotificationRecipient")
+  mentions      Notification[]     @relation("NotificationMentionedBy")
   
   @@index([email])
 }
@@ -44,6 +46,7 @@ model Workspace {
   members       WorkspaceMember[]
   pages         Page[]
   databases     Database[]
+  notifications Notification[]
   
   @@index([slug])
 }
@@ -95,6 +98,7 @@ model Page {
   activities    Activity[]
   permissions   Permission[]
   databases     Database[]
+  notifications Notification[]
   
   @@index([workspaceId])
   @@index([authorId])
@@ -220,6 +224,40 @@ model Permission {
   @@index([pageId])
 }
 
+// Notification model
+model Notification {
+  id            String           @id @default(cuid())
+  type          NotificationType
+  title         String
+  message       String
+  read          Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  // The user who receives the notification
+  recipientId   String
+  recipient     User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  // The user who triggered the notification (e.g., mentioned someone)
+  mentionedById String?
+  mentionedBy   User?            @relation("NotificationMentionedBy", fields: [mentionedById], references: [id], onDelete: SetNull)
+  
+  // Related entities
+  pageId        String?
+  page          Page?            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  
+  workspaceId   String?
+  workspace     Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Additional metadata (e.g., block ID where mention happened)
+  metadata      Json?
+  
+  @@index([recipientId, read])
+  @@index([createdAt])
+  @@index([pageId])
+  @@index([workspaceId])
+}
+
 // Enums
 enum Role {
   OWNER
@@ -262,4 +300,12 @@ enum PermissionLevel {
   COMMENT
   EDIT
   FULL_ACCESS
+}
+
+enum NotificationType {
+  MENTION
+  PAGE_SHARED
+  COMMENT_REPLY
+  PAGE_UPDATED
+  WORKSPACE_INVITE
 }

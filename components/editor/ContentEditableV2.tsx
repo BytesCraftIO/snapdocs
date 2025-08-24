@@ -13,6 +13,7 @@ interface ContentEditableProps {
   placeholder?: string
   readOnly?: boolean
   allowFormatting?: boolean
+  mentions?: Array<{ userId: string; userName: string; startIndex: number; endIndex: number }>
 }
 
 export default function ContentEditableV2({
@@ -24,21 +25,36 @@ export default function ContentEditableV2({
   className,
   placeholder,
   readOnly = false,
-  allowFormatting = false
+  allowFormatting = false,
+  mentions = []
 }: ContentEditableProps) {
   const ref = useRef<HTMLDivElement>(null)
   const lastKnownContent = useRef(content)
   const isComposing = useRef(false)
 
-  // Convert content to HTML for display
+  // Convert content to HTML for display with mention highlighting
   const contentToHtml = (text: string): string => {
     if (!text) return ''
     
     // Escape HTML entities
-    const escaped = text
+    let escaped = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
+    
+    // Apply mention highlighting
+    if (mentions && mentions.length > 0) {
+      // Sort mentions by start index in reverse to avoid index shifting
+      const sortedMentions = [...mentions].sort((a, b) => b.startIndex - a.startIndex)
+      
+      for (const mention of sortedMentions) {
+        const before = escaped.substring(0, mention.startIndex)
+        const mentionText = escaped.substring(mention.startIndex, mention.endIndex)
+        const after = escaped.substring(mention.endIndex)
+        
+        escaped = `${before}<span class="mention" data-user-id="${mention.userId}" style="color: #0969da; background-color: rgba(9, 105, 218, 0.1); padding: 0 2px; border-radius: 3px; cursor: pointer;">${mentionText}</span>${after}`
+      }
+    }
     
     // Convert newlines to <br> tags
     return escaped.replace(/\n/g, '<br>')
@@ -47,7 +63,7 @@ export default function ContentEditableV2({
   // Convert HTML back to plain text
   const htmlToContent = (html: string): string => {
     // If empty or just whitespace/br tags, return empty
-    const stripped = html.replace(/<br\s*\/?>/gi, '').trim()
+    const stripped = html.replace(/<br\s*\/?>/gi, '').replace(/<span[^>]*>|<\/span>/gi, '').trim()
     if (!stripped || stripped === '&nbsp;') {
       return ''
     }
@@ -87,7 +103,7 @@ export default function ContentEditableV2({
       ref.current.innerHTML = newHtml
       lastKnownContent.current = content
     }
-  }, [content, contentToHtml])
+  }, [content, contentToHtml, mentions])
 
   // Handle input changes
   const handleInput = useCallback(() => {

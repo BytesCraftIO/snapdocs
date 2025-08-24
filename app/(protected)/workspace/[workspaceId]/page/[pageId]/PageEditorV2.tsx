@@ -323,6 +323,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
           <div className="mt-2">
             <NotionEditor
               pageId={page.id}
+              workspaceId={page.workspaceId}
               initialBlocks={initialBlocks}
               onAutoSave={handleAutoSave}
               showSaveStatus={false}

@@ -32,6 +32,9 @@ export default function TextBlock({
       ? block.content.map(rt => rt.text).join('')
       : ''
 
+  // Extract mentions from block properties
+  const mentions = block.properties?.mentions || []
+
   return (
     <ContentEditableV2
       content={content}
@@ -43,6 +46,7 @@ export default function TextBlock({
       placeholder={placeholder}
       readOnly={readOnly}
       allowFormatting={true}
+      mentions={mentions}
     />
   )
 }

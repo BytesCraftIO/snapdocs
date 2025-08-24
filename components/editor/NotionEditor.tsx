@@ -6,15 +6,18 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-ki
 import { Block as BlockType, EditorState, EditorAction, ListProperties, ListItem } from '@/types'
 import BlockV2 from './BlockV2'
 import SlashMenu from './SlashMenu'
+import MentionAutocomplete from './MentionAutocomplete'
 import { generateId } from '@/lib/utils/id'
 import { pageContentService } from '@/lib/services/page-content'
 import { Save, Clock, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { useSocket } from '@/lib/socket/client'
+import { User } from '@prisma/client'
 
 interface NotionEditorProps {
   pageId: string
+  workspaceId?: string
   initialBlocks?: BlockType[]
   onSave?: (blocks: BlockType[]) => void
   onAutoSave?: (blocks: BlockType[]) => Promise<void>
@@ -75,7 +78,8 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved'
 
 export default function NotionEditor({ 
-  pageId, 
+  pageId,
+  workspaceId, 
   initialBlocks = [], 
   onSave,
   onAutoSave,
@@ -111,6 +115,10 @@ export default function NotionEditor({
   
   const [showSlashMenu, setShowSlashMenu] = useState(false)
   const [slashMenuPosition, setSlashMenuPosition] = useState({ top: 0, left: 0 })
+  const [showMentionMenu, setShowMentionMenu] = useState(false)
+  const [mentionMenuPosition, setMentionMenuPosition] = useState({ top: 0, left: 0 })
+  const [mentionSearchQuery, setMentionSearchQuery] = useState('')
+  const [currentMentionBlockId, setCurrentMentionBlockId] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [draggedBlock, setDraggedBlock] = useState<BlockType | null>(null)
   const [blockUsers, setBlockUsers] = useState<Map<string, { userId: string; userName: string; userColor: string }>>(new Map())
@@ -592,6 +600,74 @@ export default function NotionEditor({
     setSlashMenuPosition(position)
     setShowSlashMenu(true)
   }, [])
+  
+  const handleMentionCommand = useCallback((blockId: string, position: { top: number, left: number }, searchQuery: string) => {
+    setCurrentMentionBlockId(blockId)
+    setMentionMenuPosition(position)
+    setMentionSearchQuery(searchQuery)
+    setShowMentionMenu(true)
+  }, [])
+  
+  const handleMentionSelect = useCallback(async (user: User) => {
+    if (!currentMentionBlockId) return
+    
+    // Get the current block
+    const block = blocks.find(b => b.id === currentMentionBlockId)
+    if (!block) return
+    
+    // Replace @query with @username
+    let content = typeof block.content === 'string' ? block.content : ''
+    const atIndex = content.lastIndexOf('@')
+    if (atIndex !== -1) {
+      const beforeAt = content.substring(0, atIndex)
+      const mentionText = `@${user.name || user.email}`
+      content = `${beforeAt}${mentionText} `
+      
+      // Store mention metadata in block properties
+      const existingMentions = block.properties?.mentions || []
+      const newMention = {
+        userId: user.id,
+        userName: user.name || user.email || '',
+        startIndex: atIndex,
+        endIndex: atIndex + mentionText.length
+      }
+      
+      // Update block with content and mention metadata
+      updateBlock(currentMentionBlockId, { 
+        content,
+        properties: {
+          ...block.properties,
+          mentions: [...existingMentions, newMention]
+        }
+      })
+    }
+    
+    // Send notification to the mentioned user
+    if (workspaceId) {
+      try {
+        await fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'MENTION',
+            recipientId: user.id,
+            title: `You were mentioned`,
+            message: `You were mentioned in a page`,
+            pageId,
+            workspaceId,
+            metadata: { blockId: currentMentionBlockId }
+          })
+        })
+      } catch (error) {
+        console.error('Error sending mention notification:', error)
+      }
+    }
+    
+    // Close mention menu
+    setShowMentionMenu(false)
+    setCurrentMentionBlockId(null)
+    setMentionSearchQuery('')
+  }, [currentMentionBlockId, blocks, updateBlock, pageId, workspaceId])
 
   const handleSlashMenuSelect = useCallback((type: BlockType['type']) => {
     if (editorState.selectedBlockId) {
@@ -722,6 +798,7 @@ export default function NotionEditor({
                 onDelete={deleteBlock}
                 onAddBlock={(type, afterBlockId) => addBlock(type, undefined, afterBlockId)}
                 onSlashCommand={handleSlashCommand}
+                onMentionCommand={handleMentionCommand}
                 onFocus={(blockId) => {
                   dispatch({ type: 'SELECT_BLOCK', payload: blockId })
                   // Send focus event to other users
@@ -738,6 +815,7 @@ export default function NotionEditor({
                 readOnly={readOnly}
                 isSelected={block.id === editorState.selectedBlockId}
                 userPresence={blockUsers.get(block.id)}
+                workspaceId={workspaceId}
               />
             ))}
           </SortableContext>
@@ -775,6 +853,21 @@ export default function NotionEditor({
             onClose={() => {
               setShowSlashMenu(false)
               dispatch({ type: 'SELECT_BLOCK', payload: null })
+            }}
+          />
+        )}
+        
+        {showMentionMenu && workspaceId && (
+          <MentionAutocomplete
+            isOpen={showMentionMenu}
+            position={mentionMenuPosition}
+            searchQuery={mentionSearchQuery}
+            workspaceId={workspaceId}
+            onSelect={handleMentionSelect}
+            onClose={() => {
+              setShowMentionMenu(false)
+              setCurrentMentionBlockId(null)
+              setMentionSearchQuery('')
             }}
           />
         )}

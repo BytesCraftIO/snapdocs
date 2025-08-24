@@ -24,7 +24,9 @@ import {
   Hash,
   Calendar,
   Inbox,
-  File
+  File,
+  Bell,
+  Circle
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -39,8 +41,10 @@ import { CreateWorkspaceModal } from "@/components/workspace/create-workspace-mo
 import { SearchDialog } from "@/components/search/SearchDialog"
 import { SettingsModal } from "@/components/settings/SettingsModal"
 import { AvatarUpload } from "@/components/ui/avatar-upload"
+import { NotificationInbox } from "@/components/inbox/NotificationInbox"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
+import { formatDistanceToNow } from "date-fns"
 
 interface Workspace {
   id: string
@@ -66,6 +70,9 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -160,9 +167,58 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
     return () => clearInterval(interval)
   }, [currentWorkspace, pathname, refreshKey])
 
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications?limit=5')
+        if (response.ok) {
+          const data = await response.json()
+          setNotifications(data.notifications || [])
+          setUnreadCount(data.unreadCount || 0)
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error)
+      }
+    }
+    
+    fetchNotifications()
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
   const handleWorkspaceChange = (workspace: Workspace) => {
     setCurrentWorkspace(workspace)
     router.push(`/workspace/${workspace.id}`)
+  }
+  
+  const handleNotificationClick = async (notification: any) => {
+    // Mark as read if unread
+    if (!notification.read) {
+      try {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notificationIds: [notification.id] })
+        })
+        
+        // Update local state
+        setNotifications(prev => 
+          prev.map(n => 
+            n.id === notification.id ? { ...n, read: true } : n
+          )
+        )
+        setUnreadCount(prev => Math.max(0, prev - 1))
+      } catch (error) {
+        console.error('Error marking notification as read:', error)
+      }
+    }
+    
+    // Navigate to the page
+    if (notification.page && notification.workspace) {
+      router.push(`/workspace/${notification.workspace.id}/page/${notification.page.id}`)
+    }
   }
 
   const handleCreatePage = async (parentId?: string) => {
@@ -322,6 +378,68 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
         <ScrollArea className="flex-1 px-2">
           <div className="space-y-0.5 pb-2">
             <SidebarItem icon={<Inbox />} label="Inbox" onClick={() => {}} />
+            
+            {/* Notifications Section */}
+            <div className="relative">
+              <SidebarItem 
+                icon={<Bell />} 
+                label={
+                  <span className="flex items-center justify-between w-full">
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </span>
+                }
+                onClick={() => setShowNotifications(true)}
+                active={false}
+              />
+              
+              {/* Recent Notifications Preview */}
+              {notifications.length > 0 && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {notifications.slice(0, 3).map((notification) => (
+                    <button
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={cn(
+                        "w-full text-left px-2 py-1.5 rounded-sm text-xs transition-colors",
+                        "hover:bg-[#e5e5e4] dark:hover:bg-[#373737]",
+                        !notification.read && "bg-blue-50/50 dark:bg-blue-900/10"
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        {!notification.read && (
+                          <Circle className="h-2 w-2 mt-1 fill-blue-500 text-blue-500" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium truncate">
+                            {notification.title}
+                          </p>
+                          <p className="text-[10px] text-[#787774] dark:text-[#979797] truncate">
+                            {notification.message}
+                          </p>
+                          <p className="text-[10px] text-[#787774] dark:text-[#979797]">
+                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  {notifications.length > 3 && (
+                    <button
+                      onClick={() => setShowNotifications(true)}
+                      className="w-full text-left px-2 py-1 text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      View all {notifications.length} notifications →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            
             <SidebarItem 
               icon={<Trash2 />} 
               label="Trash" 
@@ -417,6 +535,27 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
         onOpenChange={setSettingsOpen}
         user={user}
         workspaceId={currentWorkspace?.id}
+      />
+      
+      {/* Notification Inbox Modal */}
+      <NotificationInbox 
+        isOpen={showNotifications} 
+        onClose={() => {
+          setShowNotifications(false)
+          // Refresh notifications after closing
+          setTimeout(async () => {
+            try {
+              const response = await fetch('/api/notifications?limit=5')
+              if (response.ok) {
+                const data = await response.json()
+                setNotifications(data.notifications || [])
+                setUnreadCount(data.unreadCount || 0)
+              }
+            } catch (error) {
+              console.error('Error fetching notifications:', error)
+            }
+          }, 500)
+        }} 
       />
     </>
   )
