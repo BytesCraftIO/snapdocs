@@ -450,41 +450,55 @@ function RecursivePageItem({
   }
 
   return (
-    <div>
+    <div className="w-full overflow-hidden">
       <div
         className={cn(
-          "group flex items-center gap-1 px-2 py-0.5 rounded-sm cursor-pointer transition-colors",
+          "group flex items-center gap-1 py-0.5 rounded-sm cursor-pointer transition-colors relative w-full overflow-hidden",
           "hover:bg-[#e5e5e4] dark:hover:bg-[#373737]",
           isActive && "bg-[#e5e5e4] dark:bg-[#373737] font-medium"
         )}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ 
+          paddingLeft: `${level * 16 + 8}px`, 
+          paddingRight: '8px'
+        }}
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
         onClick={() => router.push(`/workspace/${workspaceId}/page/${page.id}`)}
       >
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            if (hasChildren) setExpanded(!expanded)
-          }}
-          className={cn(
-            "p-0.5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747] rounded-sm",
-            !hasChildren && "invisible"
-          )}
-        >
-          <ChevronRight 
+        {/* Chevron */}
+        <div className="flex-shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (hasChildren) setExpanded(!expanded)
+            }}
             className={cn(
-              "h-3 w-3 transition-transform",
-              expanded && "rotate-90"
+              "p-0.5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747] rounded-sm",
+              !hasChildren && "invisible"
             )}
-          />
-        </button>
+          >
+            <ChevronRight 
+              className={cn(
+                "h-3 w-3 transition-transform",
+                expanded && "rotate-90"
+              )}
+            />
+          </button>
+        </div>
         
-        <span className="mr-1.5">{page.icon || <FileText className="h-4 w-4 opacity-50" />}</span>
-        <span className="flex-1 truncate text-[13px]">{page.title || "Untitled"}</span>
+        {/* Icon */}
+        <div className="flex-shrink-0 mr-1.5">
+          {page.icon || <FileText className="h-4 w-4 opacity-50" />}
+        </div>
         
+        {/* Title */}
+        <div className="min-w-0 flex-1 overflow-hidden w-[10px]">
+          <span className="block truncate text-[13px]">{page.title || "Untitled"}</span>
+        </div>
+        
+        {/* Actions */}
         {showActions && (
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+          <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-1">
             <Button
               variant="ghost"
               size="icon"
@@ -508,7 +522,7 @@ function RecursivePageItem({
                   <MoreHorizontal className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
+              <DropdownMenuContent align="end" sideOffset={5}>
                 <DropdownMenuItem>Delete</DropdownMenuItem>
                 <DropdownMenuItem>Duplicate</DropdownMenuItem>
                 <DropdownMenuItem>Move to</DropdownMenuItem>
@@ -519,7 +533,7 @@ function RecursivePageItem({
       </div>
       
       {hasChildren && expanded && (
-        <div>
+        <div className="w-full">
           {page.children.map((child: any) => (
             <RecursivePageItem
               key={child.id} 
