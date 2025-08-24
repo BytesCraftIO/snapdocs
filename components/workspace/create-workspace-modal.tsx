@@ -34,6 +34,17 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
     onClose?.()
   }
 
+  // Generate slug from name
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -45,13 +56,23 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
     setIsLoading(true)
 
     try {
+      const trimmedName = name.trim()
+      const slug = generateSlug(trimmedName)
+      
+      if (!slug) {
+        toast.error("Please enter a valid workspace name")
+        setIsLoading(false)
+        return
+      }
+
       const response = await fetch("/api/workspaces", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: name.trim(),
+          name: trimmedName,
+          slug: slug,
           description: description.trim() || undefined,
           icon: icon || undefined,
         }),
@@ -85,7 +106,7 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create workspace</DialogTitle>
@@ -99,7 +120,7 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
               <Label htmlFor="icon" className="text-sm font-normal">
                 Icon
               </Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {emojiOptions.map((emoji) => (
                   <button
                     key={emoji}
@@ -141,7 +162,7 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="What's this workspace for?"
-                className="min-h-[80px] border-neutral-200 dark:border-neutral-800 focus:ring-0 focus:border-neutral-400 resize-none"
+                className="min-h-[60px] max-h-[120px] border-neutral-200 dark:border-neutral-800 focus:ring-0 focus:border-neutral-400 resize-none"
                 disabled={isLoading}
               />
             </div>

@@ -15,25 +15,28 @@ export async function POST(request: NextRequest) {
     
     // Validate input
     const validatedData = createWorkspaceSchema.parse(body)
-    const { name, slug } = validatedData
+    let { name, slug } = validatedData
 
-    // Check if slug is already taken
-    const existingWorkspace = await prisma.workspace.findUnique({
-      where: { slug }
+    // Check if slug is already taken and generate a unique one if needed
+    let finalSlug = slug
+    let counter = 1
+    let existingWorkspace = await prisma.workspace.findUnique({
+      where: { slug: finalSlug }
     })
 
-    if (existingWorkspace) {
-      return NextResponse.json(
-        { error: "A workspace with this name already exists" },
-        { status: 400 }
-      )
+    while (existingWorkspace) {
+      finalSlug = `${slug}-${counter}`
+      counter++
+      existingWorkspace = await prisma.workspace.findUnique({
+        where: { slug: finalSlug }
+      })
     }
 
     // Create workspace and add user as owner
     const workspace = await prisma.workspace.create({
       data: {
         name,
-        slug,
+        slug: finalSlug,
         members: {
           create: {
             userId: user.id,
