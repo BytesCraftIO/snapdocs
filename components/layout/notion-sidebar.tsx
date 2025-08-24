@@ -347,6 +347,17 @@ function SidebarItem({
   )
 }
 
+// Helper function to check if a page or any of its descendants is active
+function hasActiveDescendant(page: any, pathname: string, workspaceId: string): boolean {
+  if (pathname === `/workspace/${workspaceId}/page/${page.id}`) {
+    return true
+  }
+  if (page.children && page.children.length > 0) {
+    return page.children.some((child: any) => hasActiveDescendant(child, pathname, workspaceId))
+  }
+  return false
+}
+
 // Recursive page item component that manages its own expand state
 function RecursivePageItem({ 
   page, 
@@ -359,11 +370,19 @@ function RecursivePageItem({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [expanded, setExpanded] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
   const hasChildren = page.children && page.children.length > 0
   const isActive = pathname === `/workspace/${workspaceId}/page/${page.id}`
+  const hasActiveChild = hasChildren && hasActiveDescendant(page, pathname, workspaceId)
+  const [expanded, setExpanded] = useState(hasActiveChild)
+  const [isCreating, setIsCreating] = useState(false)
   const [showActions, setShowActions] = useState(false)
+  
+  // Auto-expand if a child becomes active
+  useEffect(() => {
+    if (hasActiveChild && !expanded) {
+      setExpanded(true)
+    }
+  }, [hasActiveChild, pathname, expanded])
 
   const handleCreateSubpage = async () => {
     if (isCreating) return
@@ -407,9 +426,9 @@ function RecursivePageItem({
     <div>
       <div
         className={cn(
-          "group flex items-center gap-1 px-2 py-0.5 rounded-sm cursor-pointer",
+          "group flex items-center gap-1 px-2 py-0.5 rounded-sm cursor-pointer transition-colors",
           "hover:bg-[#e5e5e4] dark:hover:bg-[#373737]",
-          isActive && "bg-[#e5e5e4] dark:bg-[#373737]"
+          isActive && "bg-[#e5e5e4] dark:bg-[#373737] font-medium"
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onMouseEnter={() => setShowActions(true)}
