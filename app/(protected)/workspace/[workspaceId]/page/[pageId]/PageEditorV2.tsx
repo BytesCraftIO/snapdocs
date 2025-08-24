@@ -70,6 +70,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
   const [showCoverOptions, setShowCoverOptions] = useState(false)
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(page.updatedAt)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -101,6 +102,9 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
       if (!response.ok) {
         throw new Error('Failed to save title')
       }
+      
+      // Update the last updated timestamp
+      setLastUpdated(new Date().toISOString())
       
       // Refresh the router to update the sidebar
       router.refresh()
@@ -140,6 +144,9 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
       if (!response.ok) {
         throw new Error('Failed to save content')
       }
+      
+      // Update the last updated timestamp
+      setLastUpdated(new Date().toISOString())
     } catch (error) {
       console.error('Error saving content:', error)
       toast.error('Failed to save content')
@@ -195,6 +202,9 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
       if (!response.ok) {
         throw new Error('Failed to save page')
       }
+      
+      // Update the last updated timestamp
+      setLastUpdated(new Date().toISOString())
     } catch (error) {
       console.error('Error saving page:', error)
       toast.error('Failed to save changes')
@@ -256,7 +266,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
     <div className="min-h-screen bg-white dark:bg-[#191919]">
       {/* Notion-style Page Header */}
       <NotionPageHeader 
-        page={{...page, icon, coverImage}} 
+        page={{...page, icon, coverImage, updatedAt: lastUpdated}} 
         workspaceId={page.workspaceId}
         onUpdate={handleRefresh}
       />

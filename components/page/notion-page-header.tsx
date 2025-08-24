@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -58,6 +58,48 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
   const [hoveredAddIcon, setHoveredAddIcon] = useState(false)
   const [hoveredAddCover, setHoveredAddCover] = useState(false)
   const [isFavorite, setIsFavorite] = useState(page.isFavorite || false)
+  const [editedTime, setEditedTime] = useState("")
+
+  // Format the edited time
+  const formatEditedTime = (date: string | Date) => {
+    const editDate = new Date(date)
+    const now = new Date()
+    const diffMs = now.getTime() - editDate.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`
+    
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+    
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays < 30) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+    
+    // Format as date for older edits
+    return editDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: editDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    })
+  }
+
+  // Update edited time every 30 seconds for live updates
+  useEffect(() => {
+    const updateTime = () => {
+      if (page.updatedAt) {
+        setEditedTime(formatEditedTime(page.updatedAt))
+      }
+    }
+
+    // Set initial time
+    updateTime()
+
+    // Update every 30 seconds
+    const interval = setInterval(updateTime, 30000)
+
+    return () => clearInterval(interval)
+  }, [page.updatedAt])
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -280,6 +322,10 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
 
           {/* Top Bar Actions */}
           <div className="flex items-center justify-end gap-2 py-2 text-sm text-[#37352f80]">
+            <div className="flex items-center gap-1 px-2 py-1">
+              <span className="text-[#37352f80]">Edited</span>
+              <span className="text-[#37352f99]">{editedTime}</span>
+            </div>
             <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
               Share
             </button>
