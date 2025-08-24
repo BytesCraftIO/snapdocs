@@ -292,15 +292,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
           </div>
         </ScrollArea>
 
-        {/* Bottom Actions */}
-        <div className="p-2 border-t border-[#e5e5e4] dark:border-[#373737]">
-          <SidebarItem 
-            icon={<Plus />} 
-            label="New page" 
-            onClick={() => handleCreatePage()}
-            disabled={isCreatingPage}
-          />
-        </div>
       </div>
 
       {showCreateModal && (
