@@ -326,21 +326,12 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
             ) : (
               <div className="space-y-0">
                 {favoritePages.map((page) => (
-                  <div key={`fav-${page.id}`}>
-                    <Link href={`/workspace/${currentWorkspace?.id}/page/${page.id}`}>
-                      <div
-                        className={cn(
-                          "group flex items-center gap-1 py-0.5 px-2 rounded-sm cursor-pointer transition-colors",
-                          "hover:bg-[#e5e5e4] dark:hover:bg-[#373737]",
-                          pathname === `/workspace/${currentWorkspace?.id}/page/${page.id}` && "bg-[#e5e5e4] dark:bg-[#373737] font-medium"
-                        )}
-                      >
-                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500 mr-1" />
-                        <span className="text-base mr-1">{page.icon || '📄'}</span>
-                        <span className="text-[13px] truncate">{page.title || 'Untitled'}</span>
-                      </div>
-                    </Link>
-                  </div>
+                  <RecursivePageItem 
+                    key={`fav-${page.id}`}
+                    page={{...page, children: []}} // Don't show children in favorites
+                    workspaceId={currentWorkspace?.id || ''}
+                    level={0}
+                  />
                 ))}
               </div>
             )}
@@ -644,7 +635,7 @@ function RecursivePageItem({
               <DropdownMenuContent 
                 align="end" 
                 side="right" 
-                className="w-48 z-50"
+                className="w-56 z-50"
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
                 <DropdownMenuItem 
