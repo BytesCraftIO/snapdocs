@@ -3,10 +3,23 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Block, PageContent } from '@/types'
-import NotionEditor from '@/components/editor/NotionEditor'
+import dynamic from 'next/dynamic'
 import { NotionPageHeader } from '@/components/page/notion-page-header'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+
+// Dynamically import NotionEditor to avoid SSR hydration issues with DnD
+const NotionEditor = dynamic(
+  () => import('@/components/editor/NotionEditor'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+)
 
 interface PageData {
   id: string
