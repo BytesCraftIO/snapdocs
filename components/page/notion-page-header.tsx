@@ -37,6 +37,7 @@ import {
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { cn } from "@/lib/utils"
+import { ActiveUsers } from "@/components/collaboration/ActiveUsers"
 
 interface NotionPageHeaderProps {
   page: any
@@ -321,14 +322,16 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
         )}
 
           {/* Top Bar Actions */}
-          <div className="flex items-center justify-end gap-2 py-2 text-sm text-[#37352f80]">
-            <div className="flex items-center gap-1 px-2 py-1">
-              <span className="text-[#37352f80]">Edited</span>
-              <span className="text-[#37352f99]">{editedTime}</span>
-            </div>
-            <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
-              Share
-            </button>
+          <div className="flex items-center justify-between gap-2 py-2 text-sm text-[#37352f80]">
+            <ActiveUsers />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 px-2 py-1">
+                <span className="text-[#37352f80]">Edited</span>
+                <span className="text-[#37352f99]">{editedTime}</span>
+              </div>
+              <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
+                Share
+              </button>
             <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
               <MessageSquare className="h-4 w-4" />
             </button>
@@ -370,6 +373,7 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>

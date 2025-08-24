@@ -95,12 +95,64 @@ export default function NotionEditor({
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout>()
   
   const { blocks } = editorState
+  const previousBlocksRef = useRef<BlockType[]>(initialBlocks)
+  const hasLocalChanges = useRef(false)
+  const isProcessingRemoteUpdate = useRef(false)
+  
+  // Update blocks when initialBlocks change (for real-time collaboration)
+  const previousInitialBlocksRef = useRef(initialBlocks)
+  useEffect(() => {
+    // Only update if blocks are actually different and we don't have local changes
+    // and we're not already processing a remote update
+    if (!hasLocalChanges.current && !isProcessingRemoteUpdate.current) {
+      const blocksChanged = JSON.stringify(initialBlocks) !== JSON.stringify(previousInitialBlocksRef.current)
+      if (blocksChanged) {
+        isProcessingRemoteUpdate.current = true
+        dispatch({ type: 'SET_BLOCKS', payload: initialBlocks })
+        previousInitialBlocksRef.current = initialBlocks
+        previousBlocksRef.current = initialBlocks
+        // Reset flag after a short delay
+        setTimeout(() => {
+          isProcessingRemoteUpdate.current = false
+        }, 100)
+      }
+    }
+  }, [initialBlocks])
 
   // Auto-save functionality
   const performAutoSave = useCallback(async () => {
-    if (readOnly || blocks.length === 0) return
+    if (readOnly || blocks.length === 0 || isProcessingRemoteUpdate.current) return
+    
+    // Deep comparison to check if there are actual content changes
+    const hasContentChanges = () => {
+      if (blocks.length !== previousBlocksRef.current.length) return true
+      
+      for (let i = 0; i < blocks.length; i++) {
+        const current = blocks[i]
+        const previous = previousBlocksRef.current[i]
+        
+        // Check if block IDs or types changed
+        if (current.id !== previous.id || current.type !== previous.type) return true
+        
+        // Check content changes
+        if (JSON.stringify(current.content) !== JSON.stringify(previous.content)) return true
+        
+        // Check properties changes (for lists, etc.)
+        if (JSON.stringify(current.properties) !== JSON.stringify(previous.properties)) return true
+      }
+      
+      return false
+    }
+    
+    if (!hasContentChanges()) {
+      if (saveStatus === 'unsaved') {
+        setSaveStatus('saved')
+      }
+      return
+    }
     
     setSaveStatus('saving')
+    hasLocalChanges.current = true
     
     try {
       if (onAutoSave) {
@@ -109,25 +161,37 @@ export default function NotionEditor({
         onSave(blocks)
       }
       setSaveStatus('saved')
+      previousBlocksRef.current = [...blocks] // Create a new array reference
+      
+      // Reset local changes flag after successful save
+      setTimeout(() => {
+        hasLocalChanges.current = false
+      }, 100)
     } catch (error) {
       console.error('Auto-save failed:', error)
       setSaveStatus('error')
       toast.error('Failed to save changes')
     }
-  }, [blocks, onAutoSave, onSave, readOnly])
+  }, [blocks, onAutoSave, onSave, readOnly, saveStatus])
 
   // Auto-save effect
   useEffect(() => {
-    if (!readOnly && blocks.length > 0) {
-      setSaveStatus('unsaved')
+    if (!readOnly && blocks.length > 0 && !isProcessingRemoteUpdate.current) {
+      // Only check for changes if we're not processing a remote update
+      const hasChanges = JSON.stringify(blocks) !== JSON.stringify(previousBlocksRef.current)
       
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current)
+      if (hasChanges) {
+        setSaveStatus('unsaved')
+        hasLocalChanges.current = true
+        
+        if (autoSaveTimeoutRef.current) {
+          clearTimeout(autoSaveTimeoutRef.current)
+        }
+        
+        autoSaveTimeoutRef.current = setTimeout(() => {
+          performAutoSave()
+        }, autoSaveInterval)
       }
-      
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        performAutoSave()
-      }, autoSaveInterval)
     }
     
     return () => {
