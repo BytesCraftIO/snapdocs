@@ -13,7 +13,7 @@ interface ContentEditableProps {
   placeholder?: string
   readOnly?: boolean
   allowFormatting?: boolean
-  mentions?: Array<{ userId: string; userName: string; startIndex: number; endIndex: number }>
+  mentions?: Array<{ id?: string; userId: string; userName: string; startIndex: number; endIndex: number }>
 }
 
 export default function ContentEditableV2({
@@ -52,7 +52,10 @@ export default function ContentEditableV2({
         const mentionText = escaped.substring(mention.startIndex, mention.endIndex)
         const after = escaped.substring(mention.endIndex)
         
-        escaped = `${before}<span class="mention" data-user-id="${mention.userId}" style="color: #0969da; background-color: rgba(9, 105, 218, 0.1); padding: 0 2px; border-radius: 3px; cursor: pointer;">${mentionText}</span>${after}`
+        // Use contenteditable="false" to prevent editing within the mention span
+        // Add unique data-mention-id to prevent confusion with multiple same-name mentions
+        const mentionId = mention.id || `${mention.userId}_${mention.startIndex}`
+        escaped = `${before}<span class="mention" data-mention-id="${mentionId}" data-user-id="${mention.userId}" contenteditable="false" style="color: #0969da; background-color: rgba(9, 105, 218, 0.1); padding: 2px 4px; border-radius: 3px; cursor: pointer; font-weight: 500; display: inline-block; user-select: none;">${mentionText}</span>${after}`
       }
     }
     
@@ -63,23 +66,43 @@ export default function ContentEditableV2({
   // Convert HTML back to plain text
   const htmlToContent = (html: string): string => {
     // If empty or just whitespace/br tags, return empty
-    const stripped = html.replace(/<br\s*\/?>/gi, '').replace(/<span[^>]*>|<\/span>/gi, '').trim()
+    const stripped = html.replace(/<br\s*\/?>/gi, '').replace(/<[^>]*>/g, '').trim()
     if (!stripped || stripped === '&nbsp;') {
       return ''
     }
 
-    // Convert br tags to newlines and decode entities
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<div>/gi, '\n')
-      .replace(/<\/div>/gi, '')
-      .replace(/<p>/gi, '')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<[^>]*>/g, '') // Remove all other tags
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
+    // Create a temporary div to parse HTML properly
+    const temp = document.createElement('div')
+    temp.innerHTML = html
+    
+    // Get text content, preserving line breaks
+    let text = ''
+    const walk = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        text += node.textContent
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const elem = node as HTMLElement
+        if (elem.tagName === 'BR') {
+          text += '\n'
+        } else if (elem.tagName === 'DIV' || elem.tagName === 'P') {
+          if (text && !text.endsWith('\n')) text += '\n'
+          for (const child of Array.from(node.childNodes)) {
+            walk(child)
+          }
+          if (elem.tagName === 'P' && !text.endsWith('\n')) text += '\n'
+        } else {
+          for (const child of Array.from(node.childNodes)) {
+            walk(child)
+          }
+        }
+      }
+    }
+    
+    for (const child of Array.from(temp.childNodes)) {
+      walk(child)
+    }
+    
+    return text.replace(/&nbsp;/g, ' ').trim()
   }
 
   // Update display when content prop changes
@@ -103,7 +126,7 @@ export default function ContentEditableV2({
       ref.current.innerHTML = newHtml
       lastKnownContent.current = content
     }
-  }, [content, contentToHtml, mentions])
+  }, [content, mentions]) // Note: removed contentToHtml from deps as it's defined in component
 
   // Handle input changes
   const handleInput = useCallback(() => {

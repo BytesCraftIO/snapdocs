@@ -25,13 +25,13 @@ interface BlockV2Props {
   onDelete?: (blockId: string) => void
   onAddBlock?: (type: BlockTypeEnum, afterBlockId?: string) => string
   onSlashCommand?: (blockId: string, position: { top: number, left: number }) => void
-  onMentionCommand?: (blockId: string, position: { top: number, left: number }, searchQuery: string) => void
   onFocus?: (blockId: string) => void
   onBlur?: (blockId: string) => void
   readOnly?: boolean
   isSelected?: boolean
   userPresence?: { userId: string; userName: string; userColor: string }
   workspaceId?: string
+  pageId?: string
 }
 
 export default function BlockV2({
@@ -40,13 +40,13 @@ export default function BlockV2({
   onDelete,
   onAddBlock,
   onSlashCommand,
-  onMentionCommand,
   onFocus,
   onBlur,
   readOnly = false,
   isSelected = false,
   userPresence,
-  workspaceId
+  workspaceId,
+  pageId
 }: BlockV2Props) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
@@ -73,71 +73,8 @@ export default function BlockV2({
 
   const showHandle = !readOnly && (isHovered || isFocused || isSelected)
 
-  // Handle content changes, slash commands, and @mentions
-  const handleContentChange = useCallback((content: string) => {
-    // Update mention indices if content has changed
-    if (block.properties?.mentions && block.properties.mentions.length > 0) {
-      // Recalculate mention positions based on the new content
-      const updatedMentions = block.properties.mentions.map(mention => {
-        // Find the mention text in the new content
-        const mentionText = `@${mention.userName}`
-        const newIndex = content.indexOf(mentionText)
-        
-        if (newIndex !== -1) {
-          return {
-            ...mention,
-            startIndex: newIndex,
-            endIndex: newIndex + mentionText.length
-          }
-        }
-        return mention // Keep original if not found
-      }).filter(m => content.includes(`@${m.userName}`)) // Remove mentions that no longer exist
-      
-      // Update block properties with recalculated mentions
-      if (updatedMentions.length !== block.properties.mentions.length || 
-          JSON.stringify(updatedMentions) !== JSON.stringify(block.properties.mentions)) {
-        onUpdate?.(block.id, { 
-          content,
-          properties: {
-            ...block.properties,
-            mentions: updatedMentions
-          }
-        })
-        return
-      }
-    }
-    
-    // Check for @mention
-    const atIndex = content.lastIndexOf('@')
-    if (atIndex !== -1 && onMentionCommand) {
-      const beforeAt = content.substring(0, atIndex)
-      const afterAt = content.substring(atIndex + 1)
-      
-      // Check if @ is at the start or preceded by a space
-      if (atIndex === 0 || beforeAt[beforeAt.length - 1] === ' ') {
-        // Get the search query (text after @)
-        const searchMatch = afterAt.match(/^([\w\s]*)/)
-        const searchQuery = searchMatch ? searchMatch[1] : ''
-        
-        // Get cursor position for menu
-        const selection = window.getSelection()
-        if (selection?.rangeCount && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0)
-          const rect = range.getBoundingClientRect()
-          onMentionCommand(block.id, {
-            top: rect.bottom + window.scrollY + 8,
-            left: rect.left + window.scrollX
-          }, searchQuery)
-        } else if (contentRef.current) {
-          const rect = contentRef.current.getBoundingClientRect()
-          onMentionCommand(block.id, {
-            top: rect.bottom + window.scrollY + 8,
-            left: rect.left + window.scrollX
-          }, searchQuery)
-        }
-      }
-    }
-    
+  // Handle content changes and slash commands
+  const handleContentChange = useCallback((content: string, mentions?: any) => {
     // Check for slash command
     if (content.endsWith('/') && onSlashCommand) {
       const selection = window.getSelection()
@@ -145,13 +82,13 @@ export default function BlockV2({
         const range = selection.getRangeAt(0)
         const rect = range.getBoundingClientRect()
         onSlashCommand(block.id, {
-          top: rect.bottom + window.scrollY + 8,  // Increased spacing
+          top: rect.bottom + window.scrollY + 8,
           left: rect.left + window.scrollX
         })
       } else if (contentRef.current) {
         const rect = contentRef.current.getBoundingClientRect()
         onSlashCommand(block.id, {
-          top: rect.bottom + window.scrollY + 8,  // Increased spacing
+          top: rect.bottom + window.scrollY + 8,
           left: rect.left + window.scrollX
         })
       }
@@ -160,8 +97,16 @@ export default function BlockV2({
       return
     }
     
-    onUpdate?.(block.id, { content })
-  }, [block.id, block.properties, onUpdate, onSlashCommand, onMentionCommand])
+    // Update content and mentions in properties
+    const updates: any = { content }
+    if (mentions && Object.keys(mentions).length > 0) {
+      updates.properties = {
+        ...block.properties,
+        mentions
+      }
+    }
+    onUpdate?.(block.id, updates)
+  }, [block.id, block.properties, onUpdate, onSlashCommand])
 
   // Handle property updates (for specialized blocks)
   const handlePropertyUpdate = useCallback((properties: any) => {
@@ -421,7 +366,7 @@ export default function BlockV2({
       case 'heading1':
       case 'heading2':
       case 'heading3':
-        return <HeadingBlock {...commonProps} />
+        return <HeadingBlock {...commonProps} workspaceId={workspaceId} pageId={pageId} />
       
       case 'bulletList':
       case 'numberedList':
@@ -446,7 +391,7 @@ export default function BlockV2({
         )
       
       case 'quote':
-        return <QuoteBlock {...commonProps} />
+        return <QuoteBlock {...commonProps} workspaceId={workspaceId} pageId={pageId} />
       
       case 'callout':
         return (
@@ -480,7 +425,7 @@ export default function BlockV2({
       
       case 'paragraph':
       default:
-        return <TextBlock {...commonProps} />
+        return <TextBlock {...commonProps} workspaceId={workspaceId} pageId={pageId} />
     }
   }
 

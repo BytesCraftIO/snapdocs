@@ -61,7 +61,7 @@ export async function GET(
       joinedAt: member.joinedAt
     }))
 
-    return NextResponse.json(formattedMembers)
+    return NextResponse.json({ members: formattedMembers })
   } catch (error) {
     console.error('Error fetching workspace members:', error)
     return NextResponse.json(

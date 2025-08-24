@@ -28,9 +28,9 @@ export default function MentionAutocomplete({
   const [selectedIndex, setSelectedIndex] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Fetch workspace members when search query changes
+  // Fetch workspace members when menu opens or search query changes
   useEffect(() => {
-    if (!isOpen || !searchQuery) {
+    if (!isOpen) {
       setUsers([])
       return
     }
@@ -38,7 +38,8 @@ export default function MentionAutocomplete({
     const fetchUsers = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/workspaces/${workspaceId}/members/search?search=${searchQuery}`)
+        // Always use the search endpoint, even with empty query to get all users
+        const response = await fetch(`/api/workspaces/${workspaceId}/members/search?search=${searchQuery || ''}`)
         if (response.ok) {
           const data = await response.json()
           setUsers(data.members || [])
@@ -50,8 +51,8 @@ export default function MentionAutocomplete({
       }
     }
 
-    const debounceTimer = setTimeout(fetchUsers, 200)
-    return () => clearTimeout(debounceTimer)
+    // Fetch immediately when menu opens
+    fetchUsers()
   }, [searchQuery, workspaceId, isOpen])
 
   // Handle keyboard navigation
@@ -90,6 +91,20 @@ export default function MentionAutocomplete({
     setSelectedIndex(0)
   }, [users])
 
+  // Handle click outside to close menu
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   const getInitials = (name?: string | null, email?: string) => {
@@ -104,13 +119,19 @@ export default function MentionAutocomplete({
     return email?.[0]?.toUpperCase() || '?'
   }
 
+  // Calculate position to prevent going off-screen
+  const adjustedPosition = {
+    top: position.top,
+    left: Math.min(position.left, window.innerWidth - 280) // Prevent going off right edge
+  }
+
   return (
     <div
       ref={menuRef}
-      className="absolute z-50 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 max-h-64 overflow-y-auto"
+      className="fixed z-50 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 max-h-64 overflow-y-auto"
       style={{
-        top: position.top,
-        left: position.left
+        top: adjustedPosition.top,
+        left: adjustedPosition.left
       }}
     >
       {loading ? (

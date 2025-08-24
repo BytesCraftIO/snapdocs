@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { pageContentService } from '@/lib/services/page-content'
 import { Block } from '@/types'
+import { ensureMentionsPopulated } from '@/lib/utils/mentions'
 
 // GET /api/pages/[pageId]/content - Get page content
 export async function GET(
@@ -50,9 +51,19 @@ export async function GET(
 
     // Get page content from MongoDB
     const pageContent = await pageContentService.loadPageContent(pageId)
+    
+    // Ensure mentions are populated in blocks
+    let processedContent = pageContent
+    if (pageContent && pageContent.blocks && pageContent.blocks.length > 0) {
+      const processedBlocks = await ensureMentionsPopulated(pageContent.blocks)
+      processedContent = {
+        ...pageContent,
+        blocks: processedBlocks
+      }
+    }
 
     return NextResponse.json({
-      pageContent: pageContent || {
+      pageContent: processedContent || {
         pageId,
         blocks: [],
         version: 1,
