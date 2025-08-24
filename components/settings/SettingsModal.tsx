@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -619,6 +619,7 @@ export function SettingsModal({ open, onOpenChange, user }: SettingsModalProps) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[600px] p-0 gap-0 bg-white dark:bg-[#191919]">
+        <DialogTitle className="sr-only">Settings</DialogTitle>
         <div className="flex h-full">
           {renderSidebar()}
           <div className="flex-1 overflow-y-auto">
