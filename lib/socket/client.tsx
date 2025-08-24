@@ -15,6 +15,8 @@ interface SocketContextType {
   sendBlockAdd: (pageId: string, block: any, index: number, userId: string) => void
   sendBlockDelete: (pageId: string, blockId: string, userId: string) => void
   sendBlockReorder: (pageId: string, blockId: string, newIndex: number, userId: string) => void
+  sendBlockFocus: (pageId: string, blockId: string, userId: string) => void
+  sendBlockBlur: (pageId: string, blockId: string, userId: string) => void
   sendContentSync: (pageId: string, blocks: any[], userId: string) => void
   sendCursorPosition: (pageId: string, position: { x: number; y: number }) => void
   sendSelection: (pageId: string, selection: { start: number; end: number } | null) => void
@@ -24,6 +26,8 @@ interface SocketContextType {
   onBlockAdd?: (callback: (data: any) => void) => void
   onBlockDelete?: (callback: (data: any) => void) => void
   onBlockReorder?: (callback: (data: any) => void) => void
+  onBlockFocus?: (callback: (data: any) => void) => void
+  onBlockBlur?: (callback: (data: any) => void) => void
   onContentSync?: (callback: (data: any) => void) => void
 }
 
@@ -38,6 +42,8 @@ const SocketContext = createContext<SocketContextType>({
   sendBlockAdd: () => {},
   sendBlockDelete: () => {},
   sendBlockReorder: () => {},
+  sendBlockFocus: () => {},
+  sendBlockBlur: () => {},
   sendContentSync: () => {},
   sendCursorPosition: () => {},
   sendSelection: () => {},
@@ -47,6 +53,8 @@ const SocketContext = createContext<SocketContextType>({
   onBlockAdd: () => {},
   onBlockDelete: () => {},
   onBlockReorder: () => {},
+  onBlockFocus: () => {},
+  onBlockBlur: () => {},
   onContentSync: () => {},
 })
 
@@ -198,6 +206,28 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
   }, [socket])
   
+  // Send block focus (user starts editing)
+  const sendBlockFocus = useCallback((pageId: string, blockId: string, userId: string) => {
+    if (socket && socket.connected) {
+      socket.emit('block-focus', { 
+        pageId, 
+        blockId, 
+        userId 
+      })
+    }
+  }, [socket])
+  
+  // Send block blur (user stops editing)
+  const sendBlockBlur = useCallback((pageId: string, blockId: string, userId: string) => {
+    if (socket && socket.connected) {
+      socket.emit('block-blur', { 
+        pageId, 
+        blockId, 
+        userId 
+      })
+    }
+  }, [socket])
+  
   // Send full content sync (less frequent)
   const sendContentSync = useCallback((pageId: string, blocks: any[], userId: string) => {
     if (socket && socket.connected) {
@@ -249,6 +279,26 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
   }, [socket])
   
+  // Register block focus listener
+  const onBlockFocus = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('block-focused', callback)
+      return () => {
+        socket.off('block-focused', callback)
+      }
+    }
+  }, [socket])
+  
+  // Register block blur listener
+  const onBlockBlur = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('block-blurred', callback)
+      return () => {
+        socket.off('block-blurred', callback)
+      }
+    }
+  }, [socket])
+  
   // Register content sync listener
   const onContentSync = useCallback((callback: (data: any) => void) => {
     if (socket) {
@@ -295,6 +345,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       sendBlockAdd,
       sendBlockDelete,
       sendBlockReorder,
+      sendBlockFocus,
+      sendBlockBlur,
       sendContentSync,
       sendCursorPosition,
       sendSelection,
@@ -304,6 +356,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       onBlockAdd,
       onBlockDelete,
       onBlockReorder,
+      onBlockFocus,
+      onBlockBlur,
       onContentSync
     }}>
       {children}

@@ -161,6 +161,37 @@ app.prepare().then(() => {
       }
     })
     
+    // Handle block focus (user starts editing a block)
+    socket.on('block-focus', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        const userInfo = room.get(data.userId)
+        socket.to(currentRoom).emit('block-focused', {
+          blockId: data.blockId,
+          userId: data.userId,
+          userName: userInfo?.name || 'Anonymous',
+          userColor: userInfo?.color || '#4ECDC4',
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    // Handle block blur (user stops editing a block)
+    socket.on('block-blur', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        socket.to(currentRoom).emit('block-blurred', {
+          blockId: data.blockId,
+          userId: data.userId,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
     // Handle full content sync (periodic)
     socket.on('content-sync', (data) => {
       if (!currentRoom) return

@@ -26,8 +26,10 @@ interface BlockV2Props {
   onAddBlock?: (type: BlockTypeEnum, afterBlockId?: string) => string
   onSlashCommand?: (blockId: string, position: { top: number, left: number }) => void
   onFocus?: (blockId: string) => void
+  onBlur?: (blockId: string) => void
   readOnly?: boolean
   isSelected?: boolean
+  userPresence?: { userId: string; userName: string; userColor: string }
 }
 
 export default function BlockV2({
@@ -37,8 +39,10 @@ export default function BlockV2({
   onAddBlock,
   onSlashCommand,
   onFocus,
+  onBlur,
   readOnly = false,
-  isSelected = false
+  isSelected = false,
+  userPresence
 }: BlockV2Props) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
@@ -131,7 +135,8 @@ export default function BlockV2({
 
   const handleBlur = useCallback(() => {
     setIsFocused(false)
-  }, [])
+    onBlur?.(block.id)
+  }, [block.id, onBlur])
 
   // Get current block content  
   const getBlockContent = useCallback((): string => {
@@ -441,10 +446,27 @@ export default function BlockV2({
         className={cn(
           "block-content relative py-1 min-h-[1.5rem]",
           isSelected && "bg-blue-50 dark:bg-blue-950/20 rounded-sm",
-          isFocused && "bg-blue-25 dark:bg-blue-900/10 rounded-sm"
+          isFocused && "bg-blue-25 dark:bg-blue-900/10 rounded-sm",
+          userPresence && "ring-2 transition-all duration-200"
         )}
+        style={{
+          ...(userPresence && {
+            borderColor: userPresence.userColor,
+            boxShadow: `0 0 0 2px ${userPresence.userColor}20`
+          })
+        }}
         data-block-id={block.id}
       >
+        {/* User presence indicator */}
+        {userPresence && (
+          <div 
+            className="absolute -top-6 left-0 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-white shadow-lg z-20 animate-in fade-in slide-in-from-bottom-1 duration-200"
+            style={{ backgroundColor: userPresence.userColor }}
+          >
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+            {userPresence.userName}
+          </div>
+        )}
         {renderBlockContent()}
       </div>
     </div>

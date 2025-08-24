@@ -89,12 +89,16 @@ export default function NotionEditor({
     sendBlockUpdate, 
     sendBlockAdd, 
     sendBlockDelete, 
-    sendBlockReorder, 
+    sendBlockReorder,
+    sendBlockFocus,
+    sendBlockBlur, 
     sendContentSync, 
     onBlockUpdate, 
     onBlockAdd, 
     onBlockDelete, 
-    onBlockReorder, 
+    onBlockReorder,
+    onBlockFocus,
+    onBlockBlur, 
     onContentSync, 
     isConnected 
   } = useSocket()
@@ -109,6 +113,7 @@ export default function NotionEditor({
   const [slashMenuPosition, setSlashMenuPosition] = useState({ top: 0, left: 0 })
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [draggedBlock, setDraggedBlock] = useState<BlockType | null>(null)
+  const [blockUsers, setBlockUsers] = useState<Map<string, { userId: string; userName: string; userColor: string }>>(new Map())
   const editorRef = useRef<HTMLDivElement>(null)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout>()
   
@@ -469,6 +474,49 @@ export default function NotionEditor({
     return cleanup
   }, [onBlockReorder, userId])
   
+  // Listen for block focus events from other users
+  useEffect(() => {
+    if (!onBlockFocus) return
+    
+    const cleanup = onBlockFocus((data: { blockId: string; userId: string; userName: string; userColor: string }) => {
+      // Don't show our own focus
+      if (data.userId === userId) return
+      
+      setBlockUsers(prev => {
+        const newMap = new Map(prev)
+        newMap.set(data.blockId, {
+          userId: data.userId,
+          userName: data.userName,
+          userColor: data.userColor
+        })
+        return newMap
+      })
+    })
+    
+    return cleanup
+  }, [onBlockFocus, userId])
+  
+  // Listen for block blur events from other users
+  useEffect(() => {
+    if (!onBlockBlur) return
+    
+    const cleanup = onBlockBlur((data: { blockId: string; userId: string }) => {
+      // Don't process our own blur
+      if (data.userId === userId) return
+      
+      setBlockUsers(prev => {
+        const newMap = new Map(prev)
+        const currentUser = newMap.get(data.blockId)
+        if (currentUser?.userId === data.userId) {
+          newMap.delete(data.blockId)
+        }
+        return newMap
+      })
+    })
+    
+    return cleanup
+  }, [onBlockBlur, userId])
+  
   // Listen for full content syncs
   useEffect(() => {
     if (!onContentSync) return
@@ -674,9 +722,22 @@ export default function NotionEditor({
                 onDelete={deleteBlock}
                 onAddBlock={(type, afterBlockId) => addBlock(type, undefined, afterBlockId)}
                 onSlashCommand={handleSlashCommand}
-                onFocus={(blockId) => dispatch({ type: 'SELECT_BLOCK', payload: blockId })}
+                onFocus={(blockId) => {
+                  dispatch({ type: 'SELECT_BLOCK', payload: blockId })
+                  // Send focus event to other users
+                  if (!readOnly && isConnected && userId) {
+                    sendBlockFocus(pageId, blockId, userId)
+                  }
+                }}
+                onBlur={(blockId) => {
+                  // Send blur event to other users
+                  if (!readOnly && isConnected && userId) {
+                    sendBlockBlur(pageId, blockId, userId)
+                  }
+                }}
                 readOnly={readOnly}
                 isSelected={block.id === editorState.selectedBlockId}
+                userPresence={blockUsers.get(block.id)}
               />
             ))}
           </SortableContext>
