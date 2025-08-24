@@ -185,13 +185,15 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
       {/* User Profile Section */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <AvatarUpload
-            currentAvatarUrl={avatarUrl}
-            userName={user?.name}
-            userEmail={user?.email}
-            size="sm"
-            editable={false}
-          />
+          <div className="flex-shrink-0">
+            <AvatarUpload
+              currentAvatarUrl={avatarUrl}
+              userName={user?.name}
+              userEmail={user?.email}
+              size="sm"
+              editable={false}
+            />
+          </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-semibold truncate">{user?.name || 'User'}</h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
@@ -335,6 +337,10 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
             }}
             size="lg"
           />
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Profile Photo</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Upload a photo to personalize your account</p>
+          </div>
         </div>
         
         <div className="space-y-4">

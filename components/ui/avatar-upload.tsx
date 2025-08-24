@@ -29,9 +29,9 @@ export function AvatarUpload({
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const sizeClasses = {
-    sm: "h-10 w-10",
-    md: "h-20 w-20",
-    lg: "h-32 w-32"
+    sm: "h-8 w-8",
+    md: "h-12 w-12",
+    lg: "h-16 w-16"
   }
   
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,9 +125,13 @@ export function AvatarUpload({
   
   return (
     <div className="relative inline-block">
-      <Avatar className={cn(sizeClasses[size], "relative")}>
-        <AvatarImage src={avatarUrl || undefined} alt={userName || userEmail} />
-        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+      <Avatar className={cn(sizeClasses[size], "relative border border-gray-200 dark:border-gray-700")}>
+        <AvatarImage 
+          src={avatarUrl || undefined} 
+          alt={userName || userEmail}
+          className="object-cover" 
+        />
+        <AvatarFallback className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium text-sm">
           {getInitials()}
         </AvatarFallback>
       </Avatar>
@@ -138,18 +142,31 @@ export function AvatarUpload({
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
             className={cn(
-              "absolute bottom-0 right-0 rounded-full bg-white dark:bg-gray-800 p-1.5 shadow-lg",
+              "absolute shadow-lg",
+              "bg-white dark:bg-gray-800 rounded-full",
               "border border-gray-200 dark:border-gray-700",
-              "hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+              "hover:bg-gray-50 dark:hover:bg-gray-700 transition-all",
               "disabled:opacity-50 disabled:cursor-not-allowed",
-              size === "sm" && "p-1"
+              size === "sm" && "p-0.5 -bottom-0.5 -right-0.5",
+              size === "md" && "p-1 -bottom-1 -right-1",
+              size === "lg" && "p-1.5 -bottom-1 -right-1"
             )}
             title="Change avatar"
           >
             {isUploading ? (
-              <div className="animate-spin h-3 w-3 border-2 border-gray-500 border-t-transparent rounded-full" />
+              <div className={cn(
+                "animate-spin border-2 border-gray-500 border-t-transparent rounded-full",
+                size === "sm" && "h-3 w-3",
+                size === "md" && "h-3.5 w-3.5",
+                size === "lg" && "h-4 w-4"
+              )} />
             ) : (
-              <Camera className={cn("text-gray-600 dark:text-gray-400", size === "sm" ? "h-3 w-3" : "h-4 w-4")} />
+              <Camera className={cn(
+                "text-gray-600 dark:text-gray-400",
+                size === "sm" && "h-3 w-3",
+                size === "md" && "h-3.5 w-3.5",
+                size === "lg" && "h-4 w-4"
+              )} />
             )}
           </button>
           
@@ -158,13 +175,22 @@ export function AvatarUpload({
               onClick={handleRemoveAvatar}
               disabled={isUploading}
               className={cn(
-                "absolute -top-1 -right-1 rounded-full bg-red-500 p-1 shadow-lg",
-                "hover:bg-red-600 transition-colors",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
+                "absolute rounded-full bg-red-500 shadow-lg",
+                "hover:bg-red-600 transition-all",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "border border-white dark:border-gray-900",
+                size === "sm" && "p-0.5 -top-1 -right-1",
+                size === "md" && "p-0.5 -top-1.5 -right-1.5",
+                size === "lg" && "p-1 -top-2 -right-2"
               )}
               title="Remove avatar"
             >
-              <X className="h-3 w-3 text-white" />
+              <X className={cn(
+                "text-white",
+                size === "sm" && "h-2.5 w-2.5",
+                size === "md" && "h-3 w-3",
+                size === "lg" && "h-3.5 w-3.5"
+              )} />
             </button>
           )}
           
