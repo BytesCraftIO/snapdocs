@@ -13,15 +13,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, email } = body
+    const { name, email, avatarUrl } = body
+
+    // Build update data object
+    const updateData: any = {}
+    if (name !== undefined) updateData.name = name
+    if (email !== undefined) updateData.email = email
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl
 
     // Update user profile
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
-      data: {
-        name: name || null,
-        email: email || user.email,
-      },
+      data: updateData,
       select: {
         id: true,
         name: true,

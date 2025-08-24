@@ -38,6 +38,7 @@ import { signOut } from "next-auth/react"
 import { CreateWorkspaceModal } from "@/components/workspace/create-workspace-modal"
 import { SearchDialog } from "@/components/search/SearchDialog"
 import { SettingsModal } from "@/components/settings/SettingsModal"
+import { AvatarUpload } from "@/components/ui/avatar-upload"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
 
@@ -241,8 +242,18 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="start">
-              <div className="px-2 py-1.5">
-                <p className="text-xs text-muted-foreground">{user.email}</p>
+              <div className="px-2 py-1.5 flex items-center gap-2">
+                <AvatarUpload
+                  currentAvatarUrl={user.avatarUrl}
+                  userName={user.name}
+                  userEmail={user.email}
+                  size="sm"
+                  editable={false}
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{user.name || 'User'}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
               </div>
               <DropdownMenuSeparator />
               {workspaces.map((workspace) => (

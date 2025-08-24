@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
+import { AvatarUpload } from '@/components/ui/avatar-upload'
 import { 
   User, 
   Bell, 
@@ -56,6 +57,7 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   // Account settings state
   const [name, setName] = useState(user?.name || '')
   const [email, setEmail] = useState(user?.email || '')
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '')
   
   // Notification settings state
   const [emailNotifications, setEmailNotifications] = useState({
@@ -180,9 +182,18 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
 
   const renderSidebar = () => (
     <div className="w-60 bg-gray-50 dark:bg-[#1a1a1a] h-full border-r dark:border-gray-800">
-      <div className="p-4">
-        <h2 className="text-sm font-semibold mb-1">{user?.name || 'User'}</h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
+      <div className="p-4 flex items-center gap-3">
+        <AvatarUpload
+          currentAvatarUrl={avatarUrl}
+          userName={user?.name}
+          userEmail={user?.email}
+          size="sm"
+          editable={false}
+        />
+        <div>
+          <h2 className="text-sm font-semibold">{user?.name || 'User'}</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
+        </div>
       </div>
       
       <div className="px-2">
@@ -306,12 +317,16 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
       
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-            {name?.[0]?.toUpperCase() || email?.[0]?.toUpperCase() || 'U'}
-          </div>
-          <Button variant="outline" size="sm">
-            Upload photo
-          </Button>
+          <AvatarUpload
+            currentAvatarUrl={avatarUrl}
+            userName={name}
+            userEmail={email}
+            onUpload={(url) => {
+              setAvatarUrl(url)
+              router.refresh()
+            }}
+            size="lg"
+          />
         </div>
         
         <div className="space-y-4">
@@ -813,9 +828,13 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
               className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
             >
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                  {member.name?.[0]?.toUpperCase() || member.email?.[0]?.toUpperCase()}
-                </div>
+                <AvatarUpload
+                  currentAvatarUrl={member.avatarUrl}
+                  userName={member.name}
+                  userEmail={member.email}
+                  size="sm"
+                  editable={false}
+                />
                 <div>
                   <p className="text-sm font-medium">
                     {member.name || 'Unknown'} 
