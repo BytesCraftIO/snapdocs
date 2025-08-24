@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import {Trash2} from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { User } from "@prisma/client"
@@ -13,8 +14,7 @@ import {
   Search,
   Settings,
   ChevronsLeft,
-  MoreHorizontal,
-  Trash2,
+  Trash,
   FileText,
   Hash,
   Calendar,
@@ -449,6 +449,34 @@ function RecursivePageItem({
     }
   }
 
+  const handleDeletePage = async () => {
+    if (!confirm(`Are you sure you want to delete "${page.title}"?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/pages/${page.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast.success('Page moved to trash')
+        
+        // Navigate to workspace if we're currently on the deleted page
+        if (pathname.includes(page.id)) {
+          router.push(`/workspace/${workspaceId}`)
+        } else {
+          router.refresh()
+        }
+      } else {
+        throw new Error('Failed to delete page')
+      }
+    } catch (error) {
+      console.error('Error deleting page:', error)
+      toast.error('Failed to delete page')
+    }
+  }
+
   return (
     <div className="w-full overflow-hidden">
       <div
@@ -511,23 +539,17 @@ function RecursivePageItem({
             >
               <Plus className="h-3 w-3" />
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={5}>
-                <DropdownMenuItem>Delete</DropdownMenuItem>
-                <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                <DropdownMenuItem>Move to</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747]"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeletePage()
+              }}
+            >
+              <Trash className="h-3 w-3" />
+            </Button>
           </div>
         )}
       </div>
