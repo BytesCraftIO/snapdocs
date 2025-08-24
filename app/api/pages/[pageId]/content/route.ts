@@ -34,9 +34,17 @@ export async function GET(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to access
-    if (page.authorId !== session.user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: page.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -100,9 +108,17 @@ export async function PUT(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to edit
-    if (page.authorId !== user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: page.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -164,9 +180,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to delete
-    if (page.authorId !== session.user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: page.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

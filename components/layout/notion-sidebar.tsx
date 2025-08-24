@@ -405,6 +405,7 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         user={user}
+        workspaceId={currentWorkspace?.id}
       />
     </>
   )

@@ -58,13 +58,19 @@ export default async function PageEditorPage({ params }: PageEditorPageProps) {
       notFound()
     }
 
-    // Check permissions (basic check - you might want to implement more sophisticated permissions)
-    const isOwner = page.authorId === user.id
-    // TODO: Check workspace membership and page permissions
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: resolvedParams.workspaceId
+        }
+      }
+    })
 
-    if (!isOwner) {
-      // For now, redirect to workspace - implement proper permission handling later
-      redirect(`/workspace/${resolvedParams.workspaceId}`)
+    if (!workspaceMember) {
+      // User is not a member of this workspace
+      notFound()
     }
 
     // Get page content from MongoDB
