@@ -1,10 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Plus, Clock } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { NewPageDialog } from '@/components/pages/NewPageDialog'
+import { Clock } from 'lucide-react'
 import Link from 'next/link'
 
 interface WorkspaceDashboardProps {
@@ -18,12 +14,6 @@ export function WorkspaceDashboard({
   recentPages, 
   currentUser 
 }: WorkspaceDashboardProps) {
-  const [newPageOpen, setNewPageOpen] = useState(false)
-  const router = useRouter()
-
-  const handleCreatePage = () => {
-    setNewPageOpen(true)
-  }
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -56,21 +46,9 @@ export function WorkspaceDashboard({
     <div className="flex-1 overflow-auto bg-white dark:bg-[#191919]">
       <div className="max-w-3xl mx-auto px-8 py-12">
         {/* Simple Greeting */}
-        <h1 className="text-2xl font-semibold mb-8 text-gray-900 dark:text-gray-100">
+        <h1 className="text-2xl font-semibold mb-12 text-gray-900 dark:text-gray-100">
           {getGreeting()}
         </h1>
-
-        {/* Quick Actions */}
-        <div className="mb-12">
-          <Button 
-            onClick={handleCreatePage}
-            variant="outline"
-            className="hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New page
-          </Button>
-        </div>
 
         {/* Recent Pages - Simple List */}
         {recentPages.length > 0 && (
@@ -105,28 +83,12 @@ export function WorkspaceDashboard({
         {/* Empty State */}
         {recentPages.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              No pages yet. Create your first page to get started.
+            <p className="text-gray-500 dark:text-gray-400">
+              No pages yet. Create a new page from the sidebar to get started.
             </p>
-            <Button onClick={handleCreatePage}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create your first page
-            </Button>
           </div>
         )}
       </div>
-
-      {/* New Page Dialog */}
-      {newPageOpen && (
-        <NewPageDialog
-          workspaceId={workspace.id}
-          onClose={() => setNewPageOpen(false)}
-          onSuccess={(pageId) => {
-            setNewPageOpen(false)
-            router.push(`/workspace/${workspace.id}/page/${pageId}`)
-          }}
-        />
-      )}
     </div>
   )
 }
