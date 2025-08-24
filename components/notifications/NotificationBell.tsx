@@ -207,7 +207,7 @@ export default function NotificationBell() {
                       className="h-8 w-8 rounded-full"
                     />
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-medium">
+                    <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs font-medium">
                       {notification.mentionedBy?.name?.charAt(0) || notification.mentionedBy?.email?.charAt(0) || '?'}
                     </div>
                   )}

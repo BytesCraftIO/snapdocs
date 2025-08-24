@@ -25,7 +25,6 @@ import {
   Calendar,
   Inbox,
   File,
-  Bell,
   Circle
 } from "lucide-react"
 import {
@@ -41,7 +40,6 @@ import { CreateWorkspaceModal } from "@/components/workspace/create-workspace-mo
 import { SearchDialog } from "@/components/search/SearchDialog"
 import { SettingsModal } from "@/components/settings/SettingsModal"
 import { AvatarUpload } from "@/components/ui/avatar-upload"
-import { NotificationInbox } from "@/components/inbox/NotificationInbox"
 import NotificationBell from "@/components/notifications/NotificationBell"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
@@ -70,8 +68,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -165,26 +161,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
     
     return () => clearInterval(interval)
   }, [currentWorkspace, pathname, refreshKey])
-
-  // Fetch notification count only
-  useEffect(() => {
-    const fetchNotificationCount = async () => {
-      try {
-        const response = await fetch('/api/notifications?limit=0')
-        if (response.ok) {
-          const data = await response.json()
-          setUnreadCount(data.unreadCount || 0)
-        }
-      } catch (error) {
-        console.error('Error fetching notification count:', error)
-      }
-    }
-    
-    fetchNotificationCount()
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchNotificationCount, 30000)
-    return () => clearInterval(interval)
-  }, [])
 
   const handleWorkspaceChange = (workspace: Workspace) => {
     setCurrentWorkspace(workspace)
@@ -353,23 +329,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
           <div className="space-y-0.5 pb-2">
             <SidebarItem icon={<Inbox />} label="Inbox" onClick={() => {}} />
             
-            {/* Notifications Section */}
-            <SidebarItem 
-              icon={<Bell />} 
-              label={
-                <span className="flex items-center justify-between w-full">
-                  <span>Notifications</span>
-                  {unreadCount > 0 && (
-                    <span className="ml-auto bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </span>
-              }
-              onClick={() => setShowNotifications(true)}
-              active={false}
-            />
-            
             <SidebarItem 
               icon={<Trash2 />} 
               label="Trash" 
@@ -465,26 +424,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
         onOpenChange={setSettingsOpen}
         user={user}
         workspaceId={currentWorkspace?.id}
-      />
-      
-      {/* Notification Inbox Modal */}
-      <NotificationInbox 
-        isOpen={showNotifications} 
-        onClose={() => {
-          setShowNotifications(false)
-          // Refresh notifications after closing
-          setTimeout(async () => {
-            try {
-              const response = await fetch('/api/notifications?limit=0')
-              if (response.ok) {
-                const data = await response.json()
-                setUnreadCount(data.unreadCount || 0)
-              }
-            } catch (error) {
-              console.error('Error fetching notifications:', error)
-            }
-          }, 500)
-        }} 
       />
     </>
   )
