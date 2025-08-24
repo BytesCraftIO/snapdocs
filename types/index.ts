@@ -27,6 +27,7 @@ export interface Page {
   isPublished: boolean
   isArchived: boolean
   isDeleted: boolean
+  isFavorite: boolean
   path: string
   order: number
   workspaceId: string

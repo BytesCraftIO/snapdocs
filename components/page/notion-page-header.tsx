@@ -57,6 +57,7 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
   const [isUpdating, setIsUpdating] = useState(false)
   const [hoveredAddIcon, setHoveredAddIcon] = useState(false)
   const [hoveredAddCover, setHoveredAddCover] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(page.isFavorite || false)
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -78,6 +79,29 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)
+    }
+  }
+
+  const handleToggleFavorite = async () => {
+    try {
+      const response = await fetch(`/api/pages/${page.id}/favorite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorite(data.isFavorite)
+        toast.success(data.isFavorite ? "Added to favorites" : "Removed from favorites")
+        router.refresh()
+      } else {
+        toast.error("Failed to update favorite")
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error)
+      toast.error("Failed to update favorite")
     }
   }
 
@@ -265,8 +289,15 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
             <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
               <Clock className="h-4 w-4" />
             </button>
-            <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
-              <Star className="h-4 w-4" />
+            <button 
+              className="hover:bg-[#37352f0a] px-2 py-1 rounded"
+              onClick={handleToggleFavorite}
+              title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Star className={cn(
+                "h-4 w-4",
+                isFavorite && "fill-yellow-500 text-yellow-500"
+              )} />
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -74,6 +74,7 @@ model Page {
   isPublished   Boolean   @default(false)
   isArchived    Boolean   @default(false)
   isDeleted     Boolean   @default(false)
+  isFavorite    Boolean   @default(false)
   path          String    // Hierarchical path for nested pages
   order         Int       @default(0)
   createdAt     DateTime  @default(now())

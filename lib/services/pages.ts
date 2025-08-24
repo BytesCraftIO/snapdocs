@@ -14,7 +14,7 @@ export function buildPageTree(pages: Page[]): PageTreeNode[] {
       children: [],
       depth: 0,
       hasChildren: false,
-      isFavorite: false // This should be set based on user preferences
+      isFavorite: page.isFavorite || false // Use the actual isFavorite value from the page
     })
   })
 

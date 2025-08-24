@@ -16,6 +16,7 @@ import {
   ChevronsLeft,
   Trash,
   Trash2,
+  Star,
   FileText,
   Hash,
   Calendar,
@@ -53,6 +54,7 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSearchDialog, setShowSearchDialog] = useState(false)
   const [pages, setPages] = useState<any[]>([])
+  const [favoritePages, setFavoritePages] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreatingPage, setIsCreatingPage] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -114,13 +116,32 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
         if (response.ok) {
           const data = await response.json()
           const pageTree = data.tree || data
-          setPages(Array.isArray(pageTree) ? pageTree : [])
+          const allPages = Array.isArray(pageTree) ? pageTree : []
+          
+          // Separate favorite pages
+          const extractFavorites = (pages: any[]): any[] => {
+            let favorites: any[] = []
+            pages.forEach(page => {
+              if (page.isFavorite) {
+                favorites.push(page)
+              }
+              if (page.children) {
+                favorites = [...favorites, ...extractFavorites(page.children)]
+              }
+            })
+            return favorites
+          }
+          
+          setPages(allPages)
+          setFavoritePages(extractFavorites(allPages))
         } else {
           setPages([])
+          setFavoritePages([])
         }
       } catch (error) {
         console.error('Failed to fetch pages:', error)
         setPages([])
+        setFavoritePages([])
       }
     }
 
@@ -286,6 +307,41 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
               onClick={() => router.push(`/workspace/${currentWorkspace?.id}/trash`)}
             />
             
+            {/* Favorites Section */}
+            <div className="pt-3 pb-1">
+              <div className="flex items-center justify-between px-2 py-1">
+                <span className="text-xs font-medium text-[#787774] dark:text-[#979797]">
+                  Favorites
+                </span>
+              </div>
+            </div>
+            
+            {favoritePages.length === 0 ? (
+              <div className="px-2 py-2 text-xs text-[#787774] dark:text-[#979797]">
+                No favorites yet
+              </div>
+            ) : (
+              <div className="space-y-0">
+                {favoritePages.map((page) => (
+                  <div key={`fav-${page.id}`}>
+                    <Link href={`/workspace/${currentWorkspace?.id}/page/${page.id}`}>
+                      <div
+                        className={cn(
+                          "group flex items-center gap-1 py-0.5 px-2 rounded-sm cursor-pointer transition-colors",
+                          "hover:bg-[#e5e5e4] dark:hover:bg-[#373737]",
+                          pathname === `/workspace/${currentWorkspace?.id}/page/${page.id}` && "bg-[#e5e5e4] dark:bg-[#373737] font-medium"
+                        )}
+                      >
+                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500 mr-1" />
+                        <span className="text-base mr-1">{page.icon || '📄'}</span>
+                        <span className="text-[13px] truncate">{page.title || 'Untitled'}</span>
+                      </div>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className="pt-3 pb-1">
               <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-xs font-medium text-[#787774] dark:text-[#979797]">
@@ -406,6 +462,7 @@ function RecursivePageItem({
   const [expanded, setExpanded] = useState(hasActiveChild)
   const [isCreating, setIsCreating] = useState(false)
   const [showActions, setShowActions] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(page.isFavorite || false)
   
   // Auto-expand if a child becomes active
   useEffect(() => {
@@ -480,6 +537,30 @@ function RecursivePageItem({
     }
   }
 
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const response = await fetch(`/api/pages/${page.id}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorite(data.isFavorite)
+        toast.success(data.isFavorite ? 'Added to favorites' : 'Removed from favorites')
+        router.refresh()
+      } else {
+        throw new Error('Failed to toggle favorite')
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+      toast.error('Failed to update favorite')
+    }
+  }
+
   return (
     <div className="w-full overflow-hidden">
       <div
@@ -530,6 +611,18 @@ function RecursivePageItem({
         {/* Actions */}
         {showActions && (
           <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 hover:bg-[#d5d5d4] dark:hover:bg-[#474747]"
+              onClick={handleToggleFavorite}
+              title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Star className={cn(
+                "h-3 w-3",
+                isFavorite && "fill-yellow-500 text-yellow-500"
+              )} />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

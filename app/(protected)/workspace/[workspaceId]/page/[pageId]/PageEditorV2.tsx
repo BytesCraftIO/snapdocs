@@ -28,6 +28,7 @@ interface PageData {
   coverImage?: string
   isPublished: boolean
   isArchived: boolean
+  isFavorite?: boolean
   path: string
   workspaceId: string
   authorId: string
