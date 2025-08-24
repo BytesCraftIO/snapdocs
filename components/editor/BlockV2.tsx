@@ -428,6 +428,19 @@ export default function BlockV2({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
+      {/* User presence avatar positioned to the left of block handle */}
+      {userPresence && (
+        <div className="absolute -left-20 top-1 z-10">
+          <div 
+            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-lg animate-in fade-in zoom-in-50 duration-200 cursor-default"
+            style={{ backgroundColor: userPresence.userColor }}
+            title={`${userPresence.userName} is editing`}
+          >
+            {userPresence.userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+          </div>
+        </div>
+      )}
+      
       {/* Block handle positioned with negative margin */}
       <div className="absolute -left-12 top-1 z-10">
         <BlockHandle
@@ -447,26 +460,17 @@ export default function BlockV2({
           "block-content relative py-1 min-h-[1.5rem]",
           isSelected && "bg-blue-50 dark:bg-blue-950/20 rounded-sm",
           isFocused && "bg-blue-25 dark:bg-blue-900/10 rounded-sm",
-          userPresence && "ring-2 transition-all duration-200"
+          userPresence && "transition-all duration-200"
         )}
         style={{
           ...(userPresence && {
-            borderColor: userPresence.userColor,
-            boxShadow: `0 0 0 2px ${userPresence.userColor}20`
+            borderLeft: `3px solid ${userPresence.userColor}`,
+            paddingLeft: '8px',
+            marginLeft: '-8px'
           })
         }}
         data-block-id={block.id}
       >
-        {/* User presence indicator */}
-        {userPresence && (
-          <div 
-            className="absolute -top-6 left-0 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-white shadow-lg z-20 animate-in fade-in slide-in-from-bottom-1 duration-200"
-            style={{ backgroundColor: userPresence.userColor }}
-          >
-            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            {userPresence.userName}
-          </div>
-        )}
         {renderBlockContent()}
       </div>
     </div>
