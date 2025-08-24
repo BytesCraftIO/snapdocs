@@ -183,6 +183,7 @@ export default function ContentEditableV2({
       }
     }
     
+    // Pass through arrow keys for block navigation
     onKeyDown?.(e)
   }, [allowFormatting, onKeyDown, handleInput, readOnly])
 

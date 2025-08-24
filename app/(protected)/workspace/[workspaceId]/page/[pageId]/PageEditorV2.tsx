@@ -244,39 +244,41 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
         onUpdate={handleRefresh}
       />
       
-      {/* Main Content */}
-      <div className="max-w-[900px] mx-auto px-[96px] pb-[30vh]">
-        {/* Title */}
-        <div className={cn(
-          "pt-4",
-          !icon && !coverImage && "pt-[5vh]"
-        )}>
-          <textarea
-            ref={titleRef}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Untitled"
-            className={cn(
-              "w-full bg-transparent border-none outline-none resize-none",
-              "text-[40px] font-bold text-[#37352f] dark:text-[#e9e9e7] leading-[1.2]",
-              "placeholder:text-[#37352f4d] dark:placeholder:text-[#e9e9e780]"
-            )}
-            rows={1}
-            style={{ 
-              fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"'
-            }}
-          />
-        </div>
+      {/* Main Content - Notion-style centered layout */}
+      <div className="w-full px-[96px] pb-[30vh]">
+        <div className="max-w-[900px] mx-auto">
+          {/* Title */}
+          <div className={cn(
+            "pt-4",
+            !icon && !coverImage && "pt-[5vh]"
+          )}>
+            <textarea
+              ref={titleRef}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Untitled"
+              className={cn(
+                "w-full bg-transparent border-none outline-none resize-none",
+                "text-[40px] font-bold text-[#37352f] dark:text-[#e9e9e7] leading-[1.2]",
+                "placeholder:text-[#37352f4d] dark:placeholder:text-[#e9e9e780]"
+              )}
+              rows={1}
+              style={{ 
+                fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"'
+              }}
+            />
+          </div>
 
-        {/* Editor */}
-        <div className="mt-2">
-          <NotionEditor
-            pageId={page.id}
-            initialBlocks={initialBlocks}
-            onAutoSave={handleAutoSave}
-            showSaveStatus={false}
-            autoSaveInterval={2000}
-          />
+          {/* Editor */}
+          <div className="mt-2">
+            <NotionEditor
+              pageId={page.id}
+              initialBlocks={initialBlocks}
+              onAutoSave={handleAutoSave}
+              showSaveStatus={false}
+              autoSaveInterval={2000}
+            />
+          </div>
         </div>
       </div>
     </div>

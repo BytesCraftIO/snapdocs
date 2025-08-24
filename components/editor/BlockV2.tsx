@@ -97,6 +97,32 @@ export default function BlockV2({
     onUpdate?.(block.id, { properties })
   }, [block.id, onUpdate])
 
+  // Focus a block by ID
+  const focusBlock = useCallback((blockId: string, position: 'start' | 'end' = 'start') => {
+    const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
+    if (!blockElement) return
+
+    const editableElement = blockElement.querySelector('[contenteditable="true"]') as HTMLElement
+    if (!editableElement) return
+
+    editableElement.focus()
+
+    // Set cursor position
+    const selection = window.getSelection()
+    const range = document.createRange()
+    
+    if (position === 'end') {
+      range.selectNodeContents(editableElement)
+      range.collapse(false)
+    } else {
+      range.setStart(editableElement, 0)
+      range.collapse(true)
+    }
+    
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+  }, [])
+
   // Focus management
   const handleFocus = useCallback(() => {
     setIsFocused(true)
@@ -107,16 +133,87 @@ export default function BlockV2({
     setIsFocused(false)
   }, [])
 
+  // Get current block content  
+  const getBlockContent = useCallback((): string => {
+    if (typeof block.content === 'string') {
+      return block.content
+    }
+    if (Array.isArray(block.content)) {
+      return block.content.map(rt => rt.text).join('')
+    }
+    return ''
+  }, [block.content])
+
   // Keyboard handling
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     const content = getBlockContent()
     const isContentEmpty = !content || content.trim() === ''
     
-    // Get cursor position for backspace handling
+    // Get cursor position for navigation and backspace handling
     const selection = window.getSelection()
     const cursorAtStart = selection?.rangeCount > 0 && 
                          selection.getRangeAt(0).startOffset === 0 && 
                          selection.getRangeAt(0).endOffset === 0
+    
+    // Get cursor position at end
+    const cursorAtEnd = () => {
+      if (!selection || selection.rangeCount === 0) return false
+      const range = selection.getRangeAt(0)
+      const element = contentRef.current?.querySelector('[contenteditable="true"]')
+      if (!element) return false
+      
+      // For simple check, get the text content length
+      const textContent = element.textContent || ''
+      const textLength = textContent.length
+      
+      // Check if cursor is at the end
+      // For contenteditable, we need to check both start and end offset
+      if (range.startContainer === element || element.contains(range.startContainer)) {
+        // If it's a text node
+        if (range.startContainer.nodeType === Node.TEXT_NODE) {
+          const textNode = range.startContainer as Text
+          return range.startOffset === textNode.length && range.collapsed
+        }
+        // If it's the element itself, check against child nodes
+        return range.startOffset === element.childNodes.length && range.collapsed
+      }
+      
+      return false
+    }
+
+    // Handle Arrow Up - move to previous block
+    if (e.key === 'ArrowUp') {
+      if (cursorAtStart || isContentEmpty) {
+        e.preventDefault()
+        const allBlocks = Array.from(document.querySelectorAll('[data-block-id]'))
+        const currentIndex = allBlocks.findIndex(el => el.getAttribute('data-block-id') === block.id)
+        
+        if (currentIndex > 0) {
+          const previousBlockId = allBlocks[currentIndex - 1].getAttribute('data-block-id')
+          if (previousBlockId) {
+            focusBlock(previousBlockId, 'end')
+          }
+        }
+      }
+      return
+    }
+
+    // Handle Arrow Down - move to next block  
+    if (e.key === 'ArrowDown') {
+      if (cursorAtEnd() || isContentEmpty) {
+        e.preventDefault()
+        const allBlocks = Array.from(document.querySelectorAll('[data-block-id]'))
+        const currentIndex = allBlocks.findIndex(el => el.getAttribute('data-block-id') === block.id)
+        
+        if (currentIndex < allBlocks.length - 1) {
+          const nextBlockId = allBlocks[currentIndex + 1].getAttribute('data-block-id')
+          if (nextBlockId) {
+            focusBlock(nextBlockId, 'start')
+          }
+        }
+      }
+      return
+    }
 
     // Handle Enter key
     if (e.key === 'Enter') {
@@ -183,18 +280,7 @@ export default function BlockV2({
       // Let ListBlock handle tab indentation
       return
     }
-  }, [block])
-
-  // Get current block content
-  const getBlockContent = useCallback((): string => {
-    if (typeof block.content === 'string') {
-      return block.content
-    }
-    if (Array.isArray(block.content)) {
-      return block.content.map(rt => rt.text).join('')
-    }
-    return ''
-  }, [block.content])
+  }, [block, focusBlock, getBlockContent, onAddBlock, onUpdate, onDelete])
 
   // Create new block after current block
   const createNewBlock = useCallback((type: BlockTypeEnum) => {
@@ -206,7 +292,7 @@ export default function BlockV2({
         focusBlock(newBlockId)
       }, 10)
     }
-  }, [block.id, onAddBlock])
+  }, [block.id, onAddBlock, focusBlock])
 
   // Handle backspace on empty block
   const handleEmptyBackspace = useCallback(() => {
@@ -223,33 +309,7 @@ export default function BlockV2({
     
     // Delete current block
     onDelete?.(block.id)
-  }, [block.id, onDelete])
-
-  // Focus a block by ID
-  const focusBlock = useCallback((blockId: string, position: 'start' | 'end' = 'start') => {
-    const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
-    if (!blockElement) return
-
-    const editableElement = blockElement.querySelector('[contenteditable="true"]') as HTMLElement
-    if (!editableElement) return
-
-    editableElement.focus()
-
-    // Set cursor position
-    const selection = window.getSelection()
-    const range = document.createRange()
-    
-    if (position === 'end') {
-      range.selectNodeContents(editableElement)
-      range.collapse(false)
-    } else {
-      range.setStart(editableElement, 0)
-      range.collapse(true)
-    }
-    
-    selection?.removeAllRanges()
-    selection?.addRange(range)
-  }, [])
+  }, [block.id, onDelete, focusBlock])
 
   // Handle add block from handle with debounce
   const isAddingBlockRef = useRef(false)
@@ -364,7 +424,7 @@ export default function BlockV2({
       onMouseLeave={handleMouseLeave}
     >
       {/* Block handle positioned with negative margin */}
-      <div className="absolute -left-12 top-1 z-10">
+      <div className="absolute -left-14 top-1 z-10">
         <BlockHandle
           isVisible={showHandle}
           onAddBlock={handleAddBlock}

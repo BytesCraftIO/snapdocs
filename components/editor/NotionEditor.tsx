@@ -387,7 +387,7 @@ export default function NotionEditor({
         </div>
       )}
 
-      <div ref={editorRef} className="notion-editor relative w-full pl-8">
+      <div ref={editorRef} className="notion-editor relative w-full ml-3">
         <DndContext 
           collisionDetection={closestCenter} 
           onDragStart={handleDragStart}
