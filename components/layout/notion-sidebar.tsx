@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "next-auth/react"
 import { CreateWorkspaceModal } from "@/components/workspace/create-workspace-modal"
+import { SearchDialog } from "@/components/search/SearchDialog"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
 
@@ -49,11 +50,27 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showSearchDialog, setShowSearchDialog] = useState(false)
   const [pages, setPages] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreatingPage, setIsCreatingPage] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K for search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowSearchDialog(true)
+      }
+    }
+    
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+  
   // Fetch workspaces
   useEffect(() => {
     async function fetchWorkspaces() {
@@ -237,7 +254,18 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
 
         {/* Quick Actions */}
         <div className="p-2 space-y-0.5">
-          <SidebarItem icon={<Search />} label="Search" onClick={() => {}} />
+          <SidebarItem 
+            icon={<Search />} 
+            label={
+              <span className="flex items-center justify-between w-full">
+                <span>Search</span>
+                <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-[#37352f0a] dark:bg-[#ffffff0a] font-mono">
+                  ⌘K
+                </kbd>
+              </span>
+            }
+            onClick={() => setShowSearchDialog(true)} 
+          />
           <SidebarItem icon={<Settings />} label="Settings" onClick={() => {}} />
           <SidebarItem 
             icon={<Plus />} 
@@ -304,6 +332,14 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
           }}
         />
       )}
+      
+      {showSearchDialog && currentWorkspace && (
+        <SearchDialog
+          open={showSearchDialog}
+          onOpenChange={setShowSearchDialog}
+          workspaceId={currentWorkspace.id}
+        />
+      )}
     </>
   )
 }
@@ -316,7 +352,7 @@ function SidebarItem({
   disabled = false 
 }: { 
   icon: React.ReactNode
-  label: string
+  label: React.ReactNode
   onClick: () => void
   active?: boolean
   disabled?: boolean
