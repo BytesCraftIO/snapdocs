@@ -66,7 +66,7 @@ interface PageEditorProps {
 
 export default function PageEditorV2({ page, initialContent, user }: PageEditorProps) {
   const router = useRouter()
-  const { socket, isConnected, currentUsers, joinPage, sendContentUpdate } = useSocket()
+  const { socket, isConnected, currentUsers, joinPage, leavePage, sendContentUpdate } = useSocket()
   const [title, setTitle] = useState(page.title || '')
   const [icon, setIcon] = useState(page.icon || '')
   const [coverImage, setCoverImage] = useState(page.coverImage || '')
@@ -93,7 +93,12 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
         avatarUrl: null
       })
     }
-  }, [isConnected, page.id, page.workspaceId, user, joinPage])
+    
+    // Clean up when leaving the page
+    return () => {
+      leavePage()
+    }
+  }, [isConnected, page.id, page.workspaceId, user, joinPage, leavePage])
 
   // Listen for content updates from other users
   useEffect(() => {
@@ -331,6 +336,13 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#191919]">
+      {/* Active users indicator */}
+      {isConnected && (
+        <div className="fixed top-4 right-4 z-50">
+          <ActiveUsers />
+        </div>
+      )}
+      
       {/* Notion-style Page Header */}
       <NotionPageHeader 
         page={{...page, icon, coverImage, updatedAt: lastUpdated}} 

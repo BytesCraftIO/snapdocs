@@ -31,207 +31,120 @@ app.prepare().then(() => {
     }
   })
 
-  const pageRooms = new Map()
-  const userColors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', 
-    '#98D8C8', '#A8E6CF', '#FFD3B6', '#FFAAA5'
-  ]
-  let colorIndex = 0
-
-  const getUserColor = () => {
-    const color = userColors[colorIndex % userColors.length]
-    colorIndex++
-    return color
-  }
-
+  // Simple page-based user tracking
+  const pageRooms = new Map() // roomId -> Map(userId -> userInfo)
+  const userColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#A8E6CF', '#FFD3B6', '#FFAAA5']
+  
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id)
+    console.log('✅ Socket connected:', socket.id)
+    let currentRoom = null
+    let currentUserId = null
 
-    // Join a page room
-    socket.on('join-page', async (data) => {
-      console.log('User joining page:', data)
+    socket.on('join-page', (data) => {
+      console.log('📄 Join page request:', data)
       const { pageId, workspaceId, user } = data
-      const roomId = `page:${pageId}`
+      
+      if (!pageId || !user?.id) {
+        console.log('❌ Invalid join request - missing pageId or user.id')
+        return
+      }
 
-      // Leave previous rooms
-      const rooms = Array.from(socket.rooms)
-      rooms.forEach(room => {
-        if (room !== socket.id && room.startsWith('page:')) {
-          socket.leave(room)
-          removeUserFromRoom(room, socket.id)
-          
-          // Notify users in the old room
-          io.to(room).emit('user-left', {
-            socketId: socket.id
+      const roomId = `page:${pageId}`
+      
+      // Leave previous room if any
+      if (currentRoom && currentRoom !== roomId) {
+        socket.leave(currentRoom)
+        const oldRoom = pageRooms.get(currentRoom)
+        if (oldRoom) {
+          oldRoom.delete(currentUserId)
+          // Notify others in old room that someone left
+          socket.to(currentRoom).emit('user-left', {
+            userId: currentUserId
           })
+          console.log(`👋 User ${currentUserId} left room ${currentRoom}`)
         }
-      })
+      }
 
       // Join new room
       socket.join(roomId)
+      currentRoom = roomId
+      currentUserId = user.id
 
       // Initialize room if needed
       if (!pageRooms.has(roomId)) {
-        pageRooms.set(roomId, {
-          pageId,
-          workspaceId,
-          users: new Map()
-        })
+        pageRooms.set(roomId, new Map())
       }
 
       // Add user to room
       const room = pageRooms.get(roomId)
-      const userPresence = {
+      const userInfo = {
         userId: user.id,
-        name: user.name,
-        email: user.email,
-        avatarUrl: user.avatarUrl,
-        socketId: socket.id,
-        color: getUserColor()
+        name: user.name || 'Anonymous',
+        email: user.email || '',
+        color: userColors[Math.floor(Math.random() * userColors.length)],
+        socketId: socket.id
       }
-      room.users.set(socket.id, userPresence)
+      room.set(user.id, userInfo)
 
-      // Send current users to the new user (excluding themselves)
-      const currentUsers = Array.from(room.users.entries())
-        .filter(([id]) => id !== socket.id)
-        .map(([id, userData]) => ({
-          socketId: id,
-          ...userData
-        }))
-      socket.emit('current-users', currentUsers)
-
-      // Notify others in the room
+      // Get all users in this room
+      const allUsers = Array.from(room.values())
+      
+      // Send list of other users to the joining user (excluding themselves)
+      const otherUsers = allUsers.filter(u => u.userId !== user.id)
+      socket.emit('current-users', otherUsers)
+      
+      // Notify others that a new user joined
       socket.to(roomId).emit('user-joined', {
-        socketId: socket.id,
-        user: userPresence
+        user: userInfo
       })
       
-      console.log(`User ${user.name} joined room ${roomId}. Total users: ${room.users.size}`)
+      console.log(`✅ User ${user.name} (${user.id}) joined room ${roomId}. Total users: ${room.size}`)
     })
 
     // Handle content updates
     socket.on('content-update', (data) => {
-      const roomId = `page:${data.pageId}`
-      const room = pageRooms.get(roomId)
+      if (!currentRoom) return
       
-      if (room) {
-        const otherUsers = room.users.size - 1
-        if (otherUsers > 0) {
-          console.log(`[${new Date().toISOString()}] Content update in room ${roomId} from user ${data.userId}. Broadcasting to ${otherUsers} other users`)
-          
-          // Broadcast to all other users in the room
-          socket.to(roomId).emit('content-updated', {
-            blocks: data.blocks,
-            userId: data.userId,
-            timestamp: new Date().toISOString()
-          })
-        }
-      } else {
-        console.log(`Warning: Content update for non-existent room ${roomId}`)
-      }
-    })
-
-    // Handle cursor movement
-    socket.on('cursor-move', (data) => {
-      const roomId = `page:${data.pageId}`
-      const room = pageRooms.get(roomId)
-      
-      if (room && room.users.has(socket.id)) {
-        const user = room.users.get(socket.id)
-        user.cursorPosition = data.position
-
-        // Broadcast cursor position to others
-        socket.to(roomId).emit('cursor-moved', {
-          socketId: socket.id,
-          position: data.position,
-          user: user
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        console.log(`📝 Broadcasting content update in ${currentRoom} to ${room.size - 1} other users`)
+        socket.to(currentRoom).emit('content-updated', {
+          blocks: data.blocks,
+          userId: data.userId,
+          timestamp: new Date().toISOString()
         })
       }
-    })
-
-    // Handle selection changes
-    socket.on('selection-change', (data) => {
-      const roomId = `page:${data.pageId}`
-      const room = pageRooms.get(roomId)
-      
-      if (room && room.users.has(socket.id)) {
-        const user = room.users.get(socket.id)
-        user.selection = data.selection
-
-        // Broadcast selection to others
-        socket.to(roomId).emit('selection-changed', {
-          socketId: socket.id,
-          selection: data.selection,
-          user: user
-        })
-      }
-    })
-
-    // Handle typing indicator
-    socket.on('typing-start', (data) => {
-      const roomId = `page:${data.pageId}`
-      const room = pageRooms.get(roomId)
-      
-      if (room && room.users.has(socket.id)) {
-        const user = room.users.get(socket.id)
-        
-        socket.to(roomId).emit('user-typing', {
-          socketId: socket.id,
-          blockId: data.blockId,
-          user: user
-        })
-      }
-    })
-
-    socket.on('typing-stop', (data) => {
-      const roomId = `page:${data.pageId}`
-      
-      socket.to(roomId).emit('user-stopped-typing', {
-        socketId: socket.id,
-        blockId: data.blockId
-      })
     })
 
     // Handle disconnect
     socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id)
-
-      // Remove from all page rooms
-      pageRooms.forEach((room, roomId) => {
-        if (room.users.has(socket.id)) {
-          const user = room.users.get(socket.id)
-          room.users.delete(socket.id)
+      console.log('❌ Socket disconnected:', socket.id)
+      
+      if (currentRoom && currentUserId) {
+        const room = pageRooms.get(currentRoom)
+        if (room) {
+          room.delete(currentUserId)
           
-          // Notify others in the room
-          io.to(roomId).emit('user-left', {
-            socketId: socket.id
+          // Notify others in the room that someone left
+          socket.to(currentRoom).emit('user-left', {
+            userId: currentUserId
           })
           
-          console.log(`User ${user?.name} left room ${roomId}. Remaining users: ${room.users.size}`)
+          console.log(`👋 User ${currentUserId} disconnected from ${currentRoom}. Remaining: ${room.size}`)
           
           // Clean up empty rooms
-          if (room.users.size === 0) {
-            pageRooms.delete(roomId)
+          if (room.size === 0) {
+            pageRooms.delete(currentRoom)
+            console.log(`🧹 Cleaned up empty room ${currentRoom}`)
           }
         }
-      })
+      }
     })
   })
-
-  const removeUserFromRoom = (roomId, socketId) => {
-    const room = pageRooms.get(roomId)
-    if (room) {
-      room.users.delete(socketId)
-      
-      // Clean up empty rooms
-      if (room.users.size === 0) {
-        pageRooms.delete(roomId)
-      }
-    }
-  }
 
   server.listen(port, (err) => {
     if (err) throw err
     console.log(`> Ready on http://${hostname}:${port}`)
+    console.log('> Socket.io server running')
   })
 })
