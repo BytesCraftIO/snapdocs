@@ -179,71 +179,72 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
         </div>
       )}
 
-      <div className="max-w-[900px] mx-auto px-[96px]">
-        {/* Add Cover / Add Icon buttons */}
-        {(!coverImage || !icon) && (
-          <div className="flex gap-2 py-3 opacity-0 hover:opacity-100 transition-opacity">
-            {!icon && (
-              <button
-                className="text-sm text-[#37352f80] hover:bg-[#37352f0a] px-3 py-1 rounded"
-                onMouseEnter={() => setHoveredAddIcon(true)}
-                onMouseLeave={() => setHoveredAddIcon(false)}
-                onClick={() => setShowEmojiPicker(true)}
-              >
-                <Smile className="inline h-4 w-4 mr-1.5" />
-                Add icon
-              </button>
-            )}
-            {!coverImage && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="text-sm text-[#37352f80] hover:bg-[#37352f0a] px-3 py-1 rounded"
-                    onMouseEnter={() => setHoveredAddCover(true)}
-                    onMouseLeave={() => setHoveredAddCover(false)}
-                  >
-                    <Image className="inline h-4 w-4 mr-1.5" />
-                    Add cover
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[200px]">
-                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <div className="p-2">
-                    <p className="text-xs text-muted-foreground mb-2">Gradients</p>
-                    <div className="grid grid-cols-3 gap-1">
-                      {gradients.map((gradient, i) => (
-                        <button
-                          key={i}
-                          className="h-12 rounded border hover:border-black/50"
-                          style={{ background: gradient }}
-                          onClick={() => updatePageCover(gradient)}
-                        />
-                      ))}
+      <div className="w-full px-[96px]">
+        <div className="max-w-[900px] mx-auto">
+          {/* Add Cover / Add Icon buttons */}
+          {(!coverImage || !icon) && (
+            <div className="flex gap-2 py-3 opacity-0 hover:opacity-100 transition-opacity">
+              {!icon && (
+                <button
+                  className="text-sm text-[#37352f80] hover:bg-[#37352f0a] px-3 py-1 rounded"
+                  onMouseEnter={() => setHoveredAddIcon(true)}
+                  onMouseLeave={() => setHoveredAddIcon(false)}
+                  onClick={() => setShowEmojiPicker(true)}
+                >
+                  <Smile className="inline h-4 w-4 mr-1.5" />
+                  Add icon
+                </button>
+              )}
+              {!coverImage && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="text-sm text-[#37352f80] hover:bg-[#37352f0a] px-3 py-1 rounded"
+                      onMouseEnter={() => setHoveredAddCover(true)}
+                      onMouseLeave={() => setHoveredAddCover(false)}
+                    >
+                      <Image className="inline h-4 w-4 mr-1.5" />
+                      Add cover
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[200px]">
+                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <div className="p-2">
+                      <p className="text-xs text-muted-foreground mb-2">Gradients</p>
+                      <div className="grid grid-cols-3 gap-1">
+                        {gradients.map((gradient, i) => (
+                          <button
+                            key={i}
+                            className="h-12 rounded border hover:border-black/50"
+                            style={{ background: gradient }}
+                            onClick={() => updatePageCover(gradient)}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <button className="text-sm text-[#37352f80] hover:bg-[#37352f0a] px-3 py-1 rounded">
-              <MessageSquare className="inline h-4 w-4 mr-1.5" />
-              Add comment
-            </button>
-          </div>
-        )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <button className="text-sm text-[#37352f80] hover:bg-[#37352f0a] px-3 py-1 rounded">
+                <MessageSquare className="inline h-4 w-4 mr-1.5" />
+                Add comment
+              </button>
+            </div>
+          )}
 
-        {/* Icon */}
-        {icon && (
-          <div className="group relative inline-block mt-2">
-            <button
-              onClick={() => setShowEmojiPicker(true)}
-              className="text-[78px] leading-none hover:bg-[#37352f0a] p-2 -ml-2 rounded transition-colors"
-            >
-              {icon}
-            </button>
+          {/* Icon */}
+          {icon && (
+            <div className={`group relative inline-block ${coverImage ? '-mt-8' : 'mt-2'}`}>
+              <button
+                onClick={() => setShowEmojiPicker(true)}
+                className="text-[78px] leading-none hover:bg-[#37352f0a] p-2 -ml-2 rounded transition-colors"
+              >
+                {icon}
+              </button>
             <button
               onClick={() => updatePageIcon("")}
               className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-[#191919] rounded p-1 shadow-lg border"
@@ -253,49 +254,51 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
           </div>
         )}
 
-        {/* Top Bar Actions */}
-        <div className="flex items-center justify-end gap-2 py-2 text-sm text-[#37352f80]">
-          <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
-            Share
-          </button>
-          <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
-            <MessageSquare className="h-4 w-4" />
-          </button>
-          <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
-            <Clock className="h-4 w-4" />
-          </button>
-          <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
-            <Star className="h-4 w-4" />
-          </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="hover:bg-[#37352f0a] p-1 rounded">
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Copy className="h-4 w-4 mr-2" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Move className="h-4 w-4 mr-2" />
-                Move to
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => setShowDeleteDialog(true)}
-                className="text-red-600 dark:text-red-400"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Move to trash
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Top Bar Actions */}
+          <div className="flex items-center justify-end gap-2 py-2 text-sm text-[#37352f80]">
+            <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
+              Share
+            </button>
+            <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
+              <MessageSquare className="h-4 w-4" />
+            </button>
+            <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
+              <Clock className="h-4 w-4" />
+            </button>
+            <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
+              <Star className="h-4 w-4" />
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="hover:bg-[#37352f0a] p-1 rounded">
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Move className="h-4 w-4 mr-2" />
+                  Move to
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-red-600 dark:text-red-400"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Move to trash
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+      </div>
 
-        {/* Emoji Picker */}
-        {showEmojiPicker && (
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
           <div 
             className="fixed inset-0 z-50 flex items-center justify-center" 
             onClick={() => setShowEmojiPicker(false)}
@@ -321,8 +324,8 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
           </div>
         )}
 
-        {/* Hidden File Input */}
-        <input
+      {/* Hidden File Input */}
+      <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
@@ -339,8 +342,8 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
           className="hidden"
         />
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Move to trash?</AlertDialogTitle>
@@ -360,7 +363,6 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
     </>
   )
 }
