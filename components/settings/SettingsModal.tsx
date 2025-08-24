@@ -181,139 +181,147 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   }
 
   const renderSidebar = () => (
-    <div className="w-60 bg-gray-50 dark:bg-[#1a1a1a] h-full border-r dark:border-gray-800">
-      <div className="p-4 flex items-center gap-3">
-        <AvatarUpload
-          currentAvatarUrl={avatarUrl}
-          userName={user?.name}
-          userEmail={user?.email}
-          size="sm"
-          editable={false}
-        />
-        <div>
-          <h2 className="text-sm font-semibold">{user?.name || 'User'}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
+    <div className="w-60 min-w-[240px] bg-gray-50 dark:bg-gray-900/50 h-full border-r border-gray-200 dark:border-gray-800 flex flex-col">
+      {/* User Profile Section */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-3">
+          <AvatarUpload
+            currentAvatarUrl={avatarUrl}
+            userName={user?.name}
+            userEmail={user?.email}
+            size="sm"
+            editable={false}
+          />
+          <div className="flex-1 min-w-0">
+            <h2 className="text-sm font-semibold truncate">{user?.name || 'User'}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+          </div>
         </div>
       </div>
       
-      <div className="px-2">
-        <div className="mb-2">
-          <p className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">Account</p>
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto py-2">
+        <div className="px-2 space-y-1">
+          <div className="mb-2">
+            <p className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Account</p>
+          </div>
+        
+          <button
+            onClick={() => setCurrentSection('account')}
+            className={cn(
+              "w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 transition-all",
+              currentSection === 'account' 
+                ? "bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white font-medium" 
+                : "hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300"
+            )}
+          >
+            <User className="h-4 w-4 flex-shrink-0" />
+            <span>My account</span>
+          </button>
+        
+          <button
+            onClick={() => setCurrentSection('notifications')}
+            className={cn(
+              "w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 transition-all",
+              currentSection === 'notifications' 
+                ? "bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white font-medium" 
+                : "hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300"
+            )}
+          >
+            <Bell className="h-4 w-4 flex-shrink-0" />
+            <span>My notifications</span>
+          </button>
+        
+          <button
+            onClick={() => setCurrentSection('security')}
+            className={cn(
+              "w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 transition-all",
+              currentSection === 'security' 
+                ? "bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white font-medium" 
+                : "hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300"
+            )}
+          >
+            <Shield className="h-4 w-4 flex-shrink-0" />
+            <span>Security</span>
+          </button>
+          
+          <button
+            onClick={() => setCurrentSection('appearance')}
+            className={cn(
+              "w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 transition-all",
+              currentSection === 'appearance' 
+                ? "bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white font-medium" 
+                : "hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300"
+            )}
+          >
+            <Palette className="h-4 w-4 flex-shrink-0" />
+            <span>Appearance</span>
+          </button>
+          
+          <div className="my-3 mx-2 border-t border-gray-200 dark:border-gray-800" />
+          
+          <div className="mb-2">
+            <p className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Workspace</p>
+          </div>
+          
+          <button
+            onClick={() => setCurrentSection('workspace')}
+            className={cn(
+              "w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 transition-all",
+              currentSection === 'workspace' 
+                ? "bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white font-medium" 
+                : "hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300"
+            )}
+          >
+            <Settings className="h-4 w-4 flex-shrink-0" />
+            <span>Settings</span>
+          </button>
+          
+          <button
+            onClick={() => setCurrentSection('billing')}
+            className={cn(
+              "w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 transition-all",
+              currentSection === 'billing' 
+                ? "bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white font-medium" 
+                : "hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300"
+            )}
+          >
+            <CreditCard className="h-4 w-4 flex-shrink-0" />
+            <span>Billing</span>
+          </button>
+          
+          <button
+            onClick={() => setCurrentSection('members')}
+            className={cn(
+              "w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 transition-all",
+              currentSection === 'members' 
+                ? "bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white font-medium" 
+                : "hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300"
+            )}
+          >
+            <Users className="h-4 w-4 flex-shrink-0" />
+            <span>Members</span>
+          </button>
         </div>
-        
-        <button
-          onClick={() => setCurrentSection('account')}
-          className={cn(
-            "w-full px-2 py-1.5 text-sm text-left rounded-md flex items-center gap-2 transition-colors",
-            currentSection === 'account' 
-              ? "bg-gray-200 dark:bg-gray-800" 
-              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-          )}
-        >
-          <User className="h-4 w-4" />
-          My account
-        </button>
-        
-        <button
-          onClick={() => setCurrentSection('notifications')}
-          className={cn(
-            "w-full px-2 py-1.5 text-sm text-left rounded-md flex items-center gap-2 transition-colors",
-            currentSection === 'notifications' 
-              ? "bg-gray-200 dark:bg-gray-800" 
-              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-          )}
-        >
-          <Bell className="h-4 w-4" />
-          My notifications
-        </button>
-        
-        <button
-          onClick={() => setCurrentSection('security')}
-          className={cn(
-            "w-full px-2 py-1.5 text-sm text-left rounded-md flex items-center gap-2 transition-colors",
-            currentSection === 'security' 
-              ? "bg-gray-200 dark:bg-gray-800" 
-              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-          )}
-        >
-          <Shield className="h-4 w-4" />
-          Security
-        </button>
-        
-        <button
-          onClick={() => setCurrentSection('appearance')}
-          className={cn(
-            "w-full px-2 py-1.5 text-sm text-left rounded-md flex items-center gap-2 transition-colors",
-            currentSection === 'appearance' 
-              ? "bg-gray-200 dark:bg-gray-800" 
-              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-          )}
-        >
-          <Palette className="h-4 w-4" />
-          Appearance
-        </button>
-        
-        <div className="my-2" />
-        
-        <div className="mb-2">
-          <p className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">Workspace</p>
-        </div>
-        
-        <button
-          onClick={() => setCurrentSection('workspace')}
-          className={cn(
-            "w-full px-2 py-1.5 text-sm text-left rounded-md flex items-center gap-2 transition-colors",
-            currentSection === 'workspace' 
-              ? "bg-gray-200 dark:bg-gray-800" 
-              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          Settings
-        </button>
-        
-        <button
-          onClick={() => setCurrentSection('billing')}
-          className={cn(
-            "w-full px-2 py-1.5 text-sm text-left rounded-md flex items-center gap-2 transition-colors",
-            currentSection === 'billing' 
-              ? "bg-gray-200 dark:bg-gray-800" 
-              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-          )}
-        >
-          <CreditCard className="h-4 w-4" />
-          Billing
-        </button>
-        
-        <button
-          onClick={() => setCurrentSection('members')}
-          className={cn(
-            "w-full px-2 py-1.5 text-sm text-left rounded-md flex items-center gap-2 transition-colors",
-            currentSection === 'members' 
-              ? "bg-gray-200 dark:bg-gray-800" 
-              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-          )}
-        >
-          <Users className="h-4 w-4" />
-          Members
-        </button>
-        
-        <div className="my-3 mx-2 border-t dark:border-gray-800" />
-        
+      </div>
+      
+      {/* Logout Button */}
+      <div className="p-2 border-t border-gray-200 dark:border-gray-800">
         <button
           onClick={() => signOut({ callbackUrl: '/' })}
-          className="w-full px-2 py-1.5 text-sm text-left rounded-md flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-600 dark:text-red-400"
+          className="w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-all"
         >
-          <LogOut className="h-4 w-4" />
-          Log out
+          <LogOut className="h-4 w-4 flex-shrink-0" />
+          <span>Log out</span>
         </button>
       </div>
     </div>
   )
 
   const renderAccountSettings = () => (
-    <div className="p-8">
-      <h2 className="text-2xl font-semibold mb-6">My account</h2>
+    <div className="p-8 max-w-3xl">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My account</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Manage your personal information and preferences</p>
       
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -331,23 +339,25 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
         
         <div className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
+              className="max-w-md"
             />
           </div>
           
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              className="max-w-md"
             />
           </div>
         </div>
@@ -384,8 +394,9 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   )
 
   const renderNotificationSettings = () => (
-    <div className="p-8">
-      <h2 className="text-2xl font-semibold mb-6">My notifications</h2>
+    <div className="p-8 max-w-3xl">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My notifications</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Choose how you want to be notified</p>
       
       <div className="space-y-6">
         <div className="space-y-4">
@@ -485,8 +496,9 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   )
 
   const renderAppearanceSettings = () => (
-    <div className="p-8">
-      <h2 className="text-2xl font-semibold mb-6">Appearance</h2>
+    <div className="p-8 max-w-3xl">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Appearance</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Customize how the app looks and feels</p>
       
       <div className="space-y-6">
         <div className="space-y-4">
@@ -538,8 +550,9 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   )
 
   const renderWorkspaceSettings = () => (
-    <div className="p-8">
-      <h2 className="text-2xl font-semibold mb-6">Workspace settings</h2>
+    <div className="p-8 max-w-3xl">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Workspace settings</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Configure your workspace details and preferences</p>
       
       <div className="space-y-6">
         <div className="space-y-4">
@@ -603,8 +616,9 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   )
 
   const renderSecuritySettings = () => (
-    <div className="p-8">
-      <h2 className="text-2xl font-semibold mb-6">Security</h2>
+    <div className="p-8 max-w-3xl">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Security</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Keep your account secure</p>
       
       <div className="space-y-6">
         <div className="space-y-4">
@@ -639,8 +653,9 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   )
 
   const renderBillingSettings = () => (
-    <div className="p-8">
-      <h2 className="text-2xl font-semibold mb-6">Billing</h2>
+    <div className="p-8 max-w-3xl">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Billing</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Manage your subscription and billing</p>
       
       <div className="space-y-6">
         <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
@@ -781,13 +796,11 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   }, [open, currentSection, workspaceId])
 
   const renderMembersSettings = () => (
-    <div className="p-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold mb-2">Members</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Manage who has access to this workspace
-        </p>
-      </div>
+    <div className="p-8 max-w-4xl">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Members</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
+        Manage who has access to this workspace
+      </p>
 
       {/* Invite Member */}
       <div className="mb-8">
@@ -939,11 +952,14 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[600px] p-0 gap-0 bg-white dark:bg-[#191919]">
+      <DialogContent className="max-w-5xl w-[90vw] h-[80vh] p-0 gap-0 overflow-hidden">
         <DialogTitle className="sr-only">Settings</DialogTitle>
-        <div className="flex h-full">
+        <div className="flex h-full bg-white dark:bg-gray-950 rounded-lg overflow-hidden">
+          {/* Sidebar */}
           {renderSidebar()}
-          <div className="flex-1 overflow-y-auto">
+          
+          {/* Content Area */}
+          <div className="flex-1 bg-white dark:bg-gray-950 overflow-y-auto">
             {renderContent()}
           </div>
         </div>
