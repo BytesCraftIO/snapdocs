@@ -106,8 +106,8 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
   }
 
   const handleSaveNotifications = () => {
-    // Save notification preferences
-    toast.success('Notification preferences saved')
+    // Save notification preferences - coming soon
+    toast.info('Notification settings will be available soon!')
   }
 
   const handleUpdateWorkspace = async () => {
@@ -404,7 +404,20 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My notifications</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Choose how you want to be notified</p>
       
-      <div className="space-y-6">
+      {/* Coming Soon Badge */}
+      <div className="mb-6 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div className="flex items-center gap-2">
+          <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+          <p className="text-sm text-yellow-800 dark:text-yellow-300 font-medium">
+            Notification settings coming soon
+          </p>
+        </div>
+        <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1 ml-6">
+          We're working on bringing you customizable notification preferences. Stay tuned!
+        </p>
+      </div>
+      
+      <div className="space-y-6 opacity-50 pointer-events-none">
         <div className="space-y-4">
           <Label className="text-sm font-medium">Email notifications</Label>
           
@@ -494,8 +507,12 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
           </div>
         </div>
         
-        <Button onClick={handleSaveNotifications}>
-          Save preferences
+        <Button 
+          onClick={handleSaveNotifications}
+          disabled
+          className="cursor-not-allowed"
+        >
+          Save preferences (Coming Soon)
         </Button>
       </div>
     </div>
