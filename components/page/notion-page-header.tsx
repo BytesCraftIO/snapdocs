@@ -22,8 +22,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { 
   MoreHorizontal,
-  MessageSquare,
-  Clock,
   Star,
   Smile,
   Image,
@@ -337,12 +335,6 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
               </div>
               <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
                 Share
-              </button>
-              <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
-                <MessageSquare className="h-4 w-4" />
-              </button>
-              <button className="hover:bg-[#37352f0a] px-2 py-1 rounded">
-                <Clock className="h-4 w-4" />
               </button>
               <button 
                 className="hover:bg-[#37352f0a] px-2 py-1 rounded"
