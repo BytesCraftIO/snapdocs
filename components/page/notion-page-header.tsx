@@ -295,10 +295,6 @@ export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHead
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              <button className="text-sm text-[#37352f80] hover:bg-[#37352f0a] px-3 py-1 rounded">
-                <MessageSquare className="inline h-4 w-4 mr-1.5" />
-                Add comment
-              </button>
             </div>
           )}
 

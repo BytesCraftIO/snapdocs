@@ -78,7 +78,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { name, description, icon } = body
+    const { name, icon } = body
 
     // Check if user is admin or owner
     const workspaceMember = await prisma.workspaceMember.findUnique({
@@ -102,7 +102,6 @@ export async function PATCH(
       where: { id: workspaceId },
       data: {
         ...(name && { name }),
-        ...(description !== undefined && { description }),
         ...(icon !== undefined && { icon })
       }
     })

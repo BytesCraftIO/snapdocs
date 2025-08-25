@@ -16,7 +16,6 @@ import {
   Shield, 
   Palette, 
   Users, 
-  CreditCard,
   Settings,
   LogOut,
   Loader2,
@@ -44,7 +43,6 @@ type SettingsSection =
   | 'security' 
   | 'appearance'
   | 'workspace'
-  | 'billing'
   | 'members'
 
 export function SettingsModal({ open, onOpenChange, user, workspaceId }: SettingsModalProps) {
@@ -76,11 +74,16 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
 
   // Workspace settings state
   const [workspaceName, setWorkspaceName] = useState('My Workspace')
-  const [workspaceUrl, setWorkspaceUrl] = useState('my-workspace')
-  const [description, setDescription] = useState('')
   const [members, setMembers] = useState<any[]>([])
   const [inviteEmail, setInviteEmail] = useState('')
   const [currentWorkspace, setCurrentWorkspace] = useState<any>(null)
+  
+  // Security settings state
+  const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
 
   const handleUpdateProfile = async () => {
     setIsLoading(true)
@@ -109,6 +112,64 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
     // Save notification preferences - coming soon
     toast.info('Notification settings will be available soon!')
   }
+  
+  const handleChangePassword = async () => {
+    // Reset errors
+    setPasswordError('')
+    
+    // Validate passwords
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('All fields are required')
+      return
+    }
+    
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters')
+      return
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match')
+      return
+    }
+    
+    if (currentPassword === newPassword) {
+      setPasswordError('New password must be different from current password')
+      return
+    }
+    
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/user/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        setPasswordError(data.error || 'Failed to change password')
+        return
+      }
+      
+      toast.success('Password changed successfully')
+      // Reset form
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setShowPasswordChange(false)
+    } catch (error) {
+      console.error('Error changing password:', error)
+      setPasswordError('Failed to change password')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleUpdateWorkspace = async () => {
     if (!workspaceId) {
@@ -122,8 +183,7 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          name: workspaceName,
-          description 
+          name: workspaceName
         })
       })
 
@@ -141,17 +201,18 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
     }
   }
 
-  // Fetch workspace details when modal opens
+  // Fetch workspace details when modal opens or section changes
   useEffect(() => {
     const fetchWorkspace = async () => {
       if (!workspaceId || !open) return
+      if (currentSection !== 'workspace' && currentSection !== 'members') return
 
       try {
         const response = await fetch(`/api/workspaces/${workspaceId}`)
         if (response.ok) {
           const data = await response.json()
+          console.log('Fetched workspace data:', data) // Debug log
           setWorkspaceName(data.name || 'My Workspace')
-          setDescription(data.description || '')
           setCurrentWorkspace(data)
         }
       } catch (error) {
@@ -160,7 +221,7 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
     }
 
     fetchWorkspace()
-  }, [workspaceId, open])
+  }, [workspaceId, open, currentSection])
 
   const handleDeleteAccount = async () => {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
@@ -277,19 +338,6 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
           >
             <Settings className="h-4 w-4 flex-shrink-0" />
             <span>Settings</span>
-          </button>
-          
-          <button
-            onClick={() => setCurrentSection('billing')}
-            className={cn(
-              "w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 transition-all",
-              currentSection === 'billing' 
-                ? "bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white font-medium" 
-                : "hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300"
-            )}
-          >
-            <CreditCard className="h-4 w-4 flex-shrink-0" />
-            <span>Billing</span>
           </button>
           
           <button
@@ -523,7 +571,20 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Appearance</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Customize how the app looks and feels</p>
       
-      <div className="space-y-6">
+      {/* Coming Soon Badge */}
+      <div className="mb-6 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div className="flex items-center gap-2">
+          <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+          <p className="text-sm text-yellow-800 dark:text-yellow-300 font-medium">
+            Appearance settings coming soon
+          </p>
+        </div>
+        <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1 ml-6">
+          Theme customization, font settings, and more appearance options will be available soon!
+        </p>
+      </div>
+      
+      <div className="space-y-6 opacity-50 pointer-events-none">
         <div className="space-y-4">
           <Label className="text-sm font-medium">Theme</Label>
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -568,6 +629,84 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
             </button>
           </div>
         </div>
+        
+        <Separator />
+        
+        {/* Font Settings - Coming Soon */}
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Font</Label>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Customize your reading experience
+            </p>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Font family</span>
+              <select 
+                className="text-sm px-3 py-1 border rounded-md bg-white dark:bg-gray-800 disabled:opacity-50" 
+                disabled
+              >
+                <option>Default</option>
+                <option>Serif</option>
+                <option>Mono</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Font size</span>
+              <select 
+                className="text-sm px-3 py-1 border rounded-md bg-white dark:bg-gray-800 disabled:opacity-50" 
+                disabled
+              >
+                <option>Small</option>
+                <option>Medium</option>
+                <option>Large</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <Separator />
+        
+        {/* Page Width - Coming Soon */}
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Page width</Label>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Choose your preferred page width
+            </p>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Full width pages</span>
+            <Switch disabled />
+          </div>
+        </div>
+        
+        <Separator />
+        
+        {/* Accent Color - Coming Soon */}
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Accent color</Label>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Personalize with your favorite color
+            </p>
+          </div>
+          
+          <div className="flex gap-2">
+            {['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899'].map((color) => (
+              <button
+                key={color}
+                className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-700 disabled:opacity-50"
+                style={{ backgroundColor: color }}
+                disabled
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -577,64 +716,107 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Workspace settings</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Configure your workspace details and preferences</p>
       
-      <div className="space-y-6">
-        <div className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="workspace-name">Workspace name</Label>
-            <Input
-              id="workspace-name"
-              value={workspaceName}
-              onChange={(e) => setWorkspaceName(e.target.value)}
-              placeholder="Enter workspace name"
-            />
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="workspace-url">Workspace URL</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">notion-clone.com/</span>
+      {!currentWorkspace ? (
+        <div className="text-sm text-gray-500">Loading workspace details...</div>
+      ) : (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="workspace-name">Workspace name</Label>
               <Input
-                id="workspace-url"
-                value={workspaceUrl}
-                onChange={(e) => setWorkspaceUrl(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                placeholder="workspace-url"
-                className="flex-1"
+                id="workspace-name"
+                value={workspaceName}
+                onChange={(e) => setWorkspaceName(e.target.value)}
+                placeholder="Enter workspace name"
               />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="workspace-slug">Workspace URL</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="workspace-slug"
+                    value={workspaceId ? `${window.location.origin}/workspace/${workspaceId}` : 'Loading...'}
+                    disabled
+                    className="flex-1 disabled:opacity-70 font-mono text-sm"
+                    title="Workspace URL"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (workspaceId) {
+                        navigator.clipboard.writeText(`${window.location.origin}/workspace/${workspaceId}`)
+                        toast.success('URL copied to clipboard')
+                      }
+                    }}
+                    disabled={!workspaceId}
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Workspace slug: <span className="font-mono">{currentWorkspace?.slug || 'N/A'}</span>
+                </p>
+              </div>
             </div>
           </div>
           
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What's your workspace about?"
-              rows={3}
-            />
-          </div>
-        </div>
-        
-        <Button onClick={handleUpdateWorkspace} disabled={isLoading}>
-          {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Update workspace
-        </Button>
-        
-        <Separator />
-        
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-medium">Export data</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Download all your workspace data
-            </p>
+          <Button onClick={handleUpdateWorkspace} disabled={isLoading}>
+            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Save changes
+          </Button>
+          
+          <Separator />
+          
+          {/* Export Data - Coming Soon */}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium">Export data</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Download all your workspace data
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled
+                className="cursor-not-allowed"
+              >
+                Export all workspace data
+              </Button>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                Coming Soon
+              </span>
+            </div>
           </div>
           
-          <Button variant="outline" size="sm">
-            Export all workspace data
-          </Button>
+          <Separator />
+          
+          {/* Danger Zone */}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-red-600 dark:text-red-400">Danger zone</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Irreversible and destructive actions
+              </p>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+              disabled
+              title="Only workspace owners can delete workspaces"
+            >
+              Delete workspace
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 
@@ -644,21 +826,91 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Keep your account secure</p>
       
       <div className="space-y-6">
+        {/* Password Change Section */}
         <div className="space-y-4">
           <div>
             <h3 className="text-sm font-medium">Password</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Change your password
+              Change your password regularly to keep your account secure
             </p>
           </div>
           
-          <Button variant="outline" size="sm">
-            Change password
-          </Button>
+          {!showPasswordChange ? (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowPasswordChange(true)}
+            >
+              Change password
+            </Button>
+          ) : (
+            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Current password</Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm new password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                />
+              </div>
+              
+              {passwordError && (
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  {passwordError}
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleChangePassword}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Changing...' : 'Change password'}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setShowPasswordChange(false)
+                    setCurrentPassword('')
+                    setNewPassword('')
+                    setConfirmPassword('')
+                    setPasswordError('')
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
         
         <Separator />
         
+        {/* 2FA Section - Coming Soon */}
         <div className="space-y-4">
           <div>
             <h3 className="text-sm font-medium">Two-factor authentication</h3>
@@ -667,34 +919,51 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
             </p>
           </div>
           
-          <Button variant="outline" size="sm">
-            Enable 2FA
-          </Button>
+          {/* Coming Soon Badge for 2FA */}
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled
+              className="cursor-not-allowed"
+            >
+              Enable 2FA
+            </Button>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+              Coming Soon
+            </span>
+          </div>
+        </div>
+        
+        <Separator />
+        
+        {/* Login Sessions - Coming Soon */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-medium">Active sessions</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Manage your active login sessions
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled
+              className="cursor-not-allowed"
+            >
+              View sessions
+            </Button>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+              Coming Soon
+            </span>
+          </div>
         </div>
       </div>
     </div>
   )
 
-  const renderBillingSettings = () => (
-    <div className="p-8 max-w-3xl">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Billing</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Manage your subscription and billing</p>
-      
-      <div className="space-y-6">
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <h3 className="text-sm font-medium mb-2">Current plan</h3>
-          <p className="text-2xl font-semibold">Free</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            For personal use
-          </p>
-        </div>
-        
-        <Button className="w-full">
-          Upgrade to Pro
-        </Button>
-      </div>
-    </div>
-  )
 
   const handleInviteMember = async () => {
     if (!inviteEmail || !inviteEmail.includes('@')) {
@@ -916,9 +1185,14 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
       
       <div className="space-y-6">
         <div>
-          <h3 className="text-sm font-medium mb-4">Workspace permissions</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium">Workspace permissions</h3>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+              Coming Soon
+            </span>
+          </div>
           
-          <div className="space-y-3">
+          <div className="space-y-3 opacity-50 pointer-events-none">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">Allow members to invite</p>
@@ -926,7 +1200,7 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
                   Members can invite new people to the workspace
                 </p>
               </div>
-              <Switch />
+              <Switch disabled />
             </div>
             
             <div className="flex items-center justify-between">
@@ -936,7 +1210,7 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
                   Invite external users with limited access
                 </p>
               </div>
-              <Switch />
+              <Switch disabled />
             </div>
             
             <div className="flex items-center justify-between">
@@ -946,7 +1220,7 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
                   New members need admin approval to join
                 </p>
               </div>
-              <Switch />
+              <Switch disabled />
             </div>
           </div>
         </div>
@@ -966,8 +1240,6 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
         return renderWorkspaceSettings()
       case 'security':
         return renderSecuritySettings()
-      case 'billing':
-        return renderBillingSettings()
       case 'members':
         return renderMembersSettings()
       default:
