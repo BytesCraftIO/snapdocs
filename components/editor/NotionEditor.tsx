@@ -13,6 +13,7 @@ import { Save, Clock, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { useSocket } from '@/lib/socket/client'
+import { transformOperations, applyOperation, createDiff, Operation } from '@/lib/collaboration/ot'
 
 interface NotionEditorProps {
   pageId: string

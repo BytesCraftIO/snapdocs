@@ -14,6 +14,7 @@ interface HeadingBlockProps {
   readOnly?: boolean
   workspaceId?: string
   pageId?: string
+  blockId?: string
 }
 
 export default function HeadingBlock({
@@ -24,7 +25,8 @@ export default function HeadingBlock({
   onBlur,
   readOnly = false,
   workspaceId,
-  pageId
+  pageId,
+  blockId
 }: HeadingBlockProps) {
   const content = typeof block.content === 'string' 
     ? block.content 
@@ -70,6 +72,7 @@ export default function HeadingBlock({
     <MentionInput
       content={content}
       mentions={mentions}
+      blockId={blockId || block.id}
       onChange={handleChange}
       onKeyDown={onKeyDown}
       onFocus={onFocus}

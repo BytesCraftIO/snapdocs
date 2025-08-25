@@ -192,6 +192,93 @@ app.prepare().then(() => {
       }
     })
     
+    // Handle cursor movement
+    socket.on('cursor-move', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        const userInfo = room.get(currentUserId)
+        socket.to(currentRoom).emit('cursor-moved', {
+          userId: currentUserId,
+          userName: userInfo?.name || 'Anonymous',
+          userColor: userInfo?.color || '#4ECDC4',
+          position: data.position,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    // Handle selection change
+    socket.on('selection-change', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        const userInfo = room.get(currentUserId)
+        socket.to(currentRoom).emit('selection-changed', {
+          userId: currentUserId,
+          userName: userInfo?.name || 'Anonymous',
+          userColor: userInfo?.color || '#4ECDC4',
+          selection: data.selection,
+          blockId: data.blockId,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    // Handle typing indicators
+    socket.on('typing-start', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        const userInfo = room.get(currentUserId)
+        socket.to(currentRoom).emit('user-typing', {
+          userId: currentUserId,
+          userName: userInfo?.name || 'Anonymous',
+          blockId: data.blockId,
+          isTyping: true,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    socket.on('typing-stop', (data) => {
+      if (!currentRoom) return
+      
+      const room = pageRooms.get(currentRoom)
+      if (room && room.size > 1) {
+        socket.to(currentRoom).emit('user-typing', {
+          userId: currentUserId,
+          blockId: data.blockId,
+          isTyping: false,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+    
+    // Handle mentions
+    socket.on('user-mentioned', (data) => {
+      const { mentionedUserId, pageId, blockId, mentionedBy } = data
+      
+      // Send real-time notification to the mentioned user
+      // Find the socket of the mentioned user
+      for (const [roomId, room] of pageRooms.entries()) {
+        const mentionedUser = room.get(mentionedUserId)
+        if (mentionedUser) {
+          io.to(mentionedUser.socketId).emit('mention-notification', {
+            pageId,
+            blockId,
+            mentionedBy,
+            timestamp: new Date().toISOString()
+          })
+          console.log(`📢 Sent mention notification to ${mentionedUserId}`)
+          break
+        }
+      }
+    })
+    
     // Handle full content sync (periodic)
     socket.on('content-sync', (data) => {
       if (!currentRoom) return

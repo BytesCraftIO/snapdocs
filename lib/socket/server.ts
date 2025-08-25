@@ -81,7 +81,10 @@ class SocketServer {
         // Add user to room
         const room = this.pageRooms.get(roomId)!
         const userPresence: UserPresence = {
-          ...user,
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl,
           color: this.getUserColor()
         }
         room.users.set(socket.id, userPresence)

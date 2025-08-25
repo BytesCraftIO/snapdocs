@@ -19,9 +19,10 @@ interface SocketContextType {
   sendBlockBlur: (pageId: string, blockId: string, userId: string) => void
   sendContentSync: (pageId: string, blocks: any[], userId: string) => void
   sendCursorPosition: (pageId: string, position: { x: number; y: number }) => void
-  sendSelection: (pageId: string, selection: { start: number; end: number } | null) => void
+  sendSelection: (pageId: string, selection: { start: number; end: number } | null, blockId?: string) => void
   sendTypingStart: (pageId: string, blockId: string) => void
   sendTypingStop: (pageId: string, blockId: string) => void
+  sendUserMentioned: (mentionedUserId: string, pageId: string, blockId: string, mentionedBy: any) => void
   onBlockUpdate?: (callback: (data: any) => void) => void
   onBlockAdd?: (callback: (data: any) => void) => void
   onBlockDelete?: (callback: (data: any) => void) => void
@@ -29,6 +30,10 @@ interface SocketContextType {
   onBlockFocus?: (callback: (data: any) => void) => void
   onBlockBlur?: (callback: (data: any) => void) => void
   onContentSync?: (callback: (data: any) => void) => void
+  onCursorMove?: (callback: (data: any) => void) => void
+  onSelectionChange?: (callback: (data: any) => void) => void
+  onUserTyping?: (callback: (data: any) => void) => void
+  onMentionNotification?: (callback: (data: any) => void) => void
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -49,6 +54,7 @@ const SocketContext = createContext<SocketContextType>({
   sendSelection: () => {},
   sendTypingStart: () => {},
   sendTypingStop: () => {},
+  sendUserMentioned: () => {},
   onBlockUpdate: () => {},
   onBlockAdd: () => {},
   onBlockDelete: () => {},
@@ -56,6 +62,10 @@ const SocketContext = createContext<SocketContextType>({
   onBlockFocus: () => {},
   onBlockBlur: () => {},
   onContentSync: () => {},
+  onCursorMove: () => {},
+  onSelectionChange: () => {},
+  onUserTyping: () => {},
+  onMentionNotification: () => {},
 })
 
 export function SocketProvider({ children }: { children: ReactNode }) {
@@ -315,9 +325,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
   }, [socket])
 
-  const sendSelection = useCallback((pageId: string, selection: { start: number; end: number } | null) => {
+  const sendSelection = useCallback((pageId: string, selection: { start: number; end: number } | null, blockId?: string) => {
     if (socket && socket.connected) {
-      socket.emit('selection-change', { pageId, selection })
+      socket.emit('selection-change', { pageId, selection, blockId })
     }
   }, [socket])
 
@@ -330,6 +340,52 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const sendTypingStop = useCallback((pageId: string, blockId: string) => {
     if (socket && socket.connected) {
       socket.emit('typing-stop', { pageId, blockId })
+    }
+  }, [socket])
+  
+  const sendUserMentioned = useCallback((mentionedUserId: string, pageId: string, blockId: string, mentionedBy: any) => {
+    if (socket && socket.connected) {
+      socket.emit('user-mentioned', { mentionedUserId, pageId, blockId, mentionedBy })
+    }
+  }, [socket])
+  
+  // Register cursor move listener
+  const onCursorMove = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('cursor-moved', callback)
+      return () => {
+        socket.off('cursor-moved', callback)
+      }
+    }
+  }, [socket])
+  
+  // Register selection change listener
+  const onSelectionChange = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('selection-changed', callback)
+      return () => {
+        socket.off('selection-changed', callback)
+      }
+    }
+  }, [socket])
+  
+  // Register typing listener
+  const onUserTyping = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('user-typing', callback)
+      return () => {
+        socket.off('user-typing', callback)
+      }
+    }
+  }, [socket])
+  
+  // Register mention notification listener
+  const onMentionNotification = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('mention-notification', callback)
+      return () => {
+        socket.off('mention-notification', callback)
+      }
     }
   }, [socket])
 
@@ -352,13 +408,18 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       sendSelection,
       sendTypingStart,
       sendTypingStop,
+      sendUserMentioned,
       onBlockUpdate,
       onBlockAdd,
       onBlockDelete,
       onBlockReorder,
       onBlockFocus,
       onBlockBlur,
-      onContentSync
+      onContentSync,
+      onCursorMove,
+      onSelectionChange,
+      onUserTyping,
+      onMentionNotification
     }}>
       {children}
     </SocketContext.Provider>

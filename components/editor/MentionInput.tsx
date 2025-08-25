@@ -4,6 +4,8 @@ import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import MentionAutocomplete from './MentionAutocomplete'
 import { User } from '@prisma/client'
+import { useSocket } from '@/lib/socket/client'
+import { useSession } from 'next-auth/react'
 
 interface MentionData {
   [key: string]: {
@@ -25,6 +27,7 @@ interface MentionInputProps {
   readOnly?: boolean
   workspaceId?: string
   pageId?: string
+  blockId?: string
 }
 
 interface MentionSearchState {
@@ -45,9 +48,12 @@ export default function MentionInput({
   placeholder = "Type '/' for commands, '@' to mention",
   readOnly = false,
   workspaceId,
-  pageId
+  pageId,
+  blockId
 }: MentionInputProps) {
   const inputRef = useRef<HTMLDivElement>(null)
+  const { sendUserMentioned, sendTypingStart, sendTypingStop } = useSocket()
+  const { data: session } = useSession()
   const [localMentions, setLocalMentions] = useState(mentions)
   const [mentionSearch, setMentionSearch] = useState<MentionSearchState>({
     active: false,
@@ -57,6 +63,7 @@ export default function MentionInput({
   })
   const isComposingRef = useRef(false)
   const lastContentRef = useRef(content)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   // Update local mentions when prop changes
   useEffect(() => {
@@ -216,6 +223,21 @@ export default function MentionInput({
     
     const plainText = getPlainTextWithPlaceholders()
     
+    // Send typing indicator
+    if (pageId && blockId) {
+      sendTypingStart(pageId, blockId)
+      
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+      
+      // Set new timeout to stop typing indicator
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTypingStop(pageId, blockId)
+      }, 1000)
+    }
+    
     // Check for @ mention trigger
     const selection = window.getSelection()
     if (selection && selection.rangeCount > 0) {
@@ -261,13 +283,14 @@ export default function MentionInput({
     
     // Update content
     onChange(plainText, localMentions)
-  }, [getPlainTextWithPlaceholders, onChange, localMentions, readOnly])
+  }, [getPlainTextWithPlaceholders, onChange, localMentions, readOnly, pageId, blockId, sendTypingStart, sendTypingStop])
   
   // Send notification for mention
   const sendMentionNotification = useCallback(async (userId: string) => {
     if (!pageId || !workspaceId) return
     
     try {
+      // Send via REST API for persistent notification
       await fetch('/api/notifications/mention', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -278,10 +301,19 @@ export default function MentionInput({
           message: 'mentioned you in a page'
         })
       })
+      
+      // Send real-time notification via socket
+      if (session?.user && blockId) {
+        sendUserMentioned(userId, pageId, blockId || '', {
+          id: session.user.id,
+          name: session.user.name || session.user.email,
+          email: session.user.email
+        })
+      }
     } catch (error) {
       console.error('Failed to send mention notification:', error)
     }
-  }, [pageId, workspaceId])
+  }, [pageId, workspaceId, blockId, session, sendUserMentioned])
   
   // Handle mention selection
   const handleMentionSelect = useCallback((user: User) => {

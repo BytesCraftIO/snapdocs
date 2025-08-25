@@ -23,7 +23,6 @@ import {
   FileText,
   Hash,
   Calendar,
-  Inbox,
   File,
   Circle
 } from "lucide-react"
@@ -40,7 +39,6 @@ import { CreateWorkspaceModal } from "@/components/workspace/create-workspace-mo
 import { SearchDialog } from "@/components/search/SearchDialog"
 import { SettingsModal } from "@/components/settings/SettingsModal"
 import { AvatarUpload } from "@/components/ui/avatar-upload"
-import NotificationBell from "@/components/notifications/NotificationBell"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
 
@@ -285,7 +283,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
           </DropdownMenu>
 
           <div className="flex items-center gap-1">
-            <NotificationBell />
             <Button
               variant="ghost"
               size="icon"
@@ -327,7 +324,6 @@ export function NotionSidebar({ user }: NotionSidebarProps) {
         {/* Main Navigation */}
         <ScrollArea className="flex-1 px-2">
           <div className="space-y-0.5 pb-2">
-            <SidebarItem icon={<Inbox />} label="Inbox" onClick={() => {}} />
             
             <SidebarItem 
               icon={<Trash2 />} 

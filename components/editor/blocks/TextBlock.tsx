@@ -16,6 +16,7 @@ interface TextBlockProps {
   className?: string
   workspaceId?: string
   pageId?: string
+  blockId?: string
 }
 
 export default function TextBlock({
@@ -28,7 +29,8 @@ export default function TextBlock({
   placeholder = "Type '/' for commands, '@' to mention",
   className,
   workspaceId,
-  pageId
+  pageId,
+  blockId
 }: TextBlockProps) {
   const content = typeof block.content === 'string' 
     ? block.content 
@@ -48,6 +50,7 @@ export default function TextBlock({
     <MentionInput
       content={content}
       mentions={mentions}
+      blockId={blockId || block.id}
       onChange={handleChange}
       onKeyDown={onKeyDown}
       onFocus={onFocus}

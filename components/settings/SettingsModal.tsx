@@ -779,7 +779,9 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
       const response = await fetch(`/api/workspaces/${workspaceId}/members`)
       if (response.ok) {
         const data = await response.json()
-        setMembers(data)
+        // Ensure we're getting an array - handle both { members: [...] } and direct array responses
+        const membersList = Array.isArray(data) ? data : (data.members || [])
+        setMembers(membersList)
       } else {
         // Fallback to current user only
         setMembers([
@@ -836,12 +838,12 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
         <div className="flex items-center justify-between mb-4">
           <Label className="text-sm font-medium">Workspace members</Label>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            {members.length} {members.length === 1 ? 'member' : 'members'}
+            {Array.isArray(members) ? members.length : 0} {members?.length === 1 ? 'member' : 'members'}
           </span>
         </div>
 
         <div className="space-y-2">
-          {members.map((member) => (
+          {Array.isArray(members) && members.map((member) => (
             <div 
               key={member.id}
               className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"

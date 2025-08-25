@@ -13,6 +13,7 @@ interface QuoteBlockProps {
   readOnly?: boolean
   workspaceId?: string
   pageId?: string
+  blockId?: string
 }
 
 export default function QuoteBlock({
@@ -23,7 +24,8 @@ export default function QuoteBlock({
   onBlur,
   readOnly = false,
   workspaceId,
-  pageId
+  pageId,
+  blockId
 }: QuoteBlockProps) {
   const content = typeof block.content === 'string' 
     ? block.content 
@@ -44,6 +46,7 @@ export default function QuoteBlock({
       <MentionInput
         content={content}
         mentions={mentions}
+        blockId={blockId || block.id}
         onChange={handleChange}
         onKeyDown={onKeyDown}
         onFocus={onFocus}
