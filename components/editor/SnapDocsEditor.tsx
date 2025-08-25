@@ -15,7 +15,7 @@ import toast from 'react-hot-toast'
 import { useSocket } from '@/lib/socket/client'
 import { transformOperations, applyOperation, createDiff, Operation } from '@/lib/collaboration/ot'
 
-interface NotionEditorProps {
+interface SnapDocsEditorProps {
   pageId: string
   workspaceId?: string
   initialBlocks?: BlockType[]
@@ -77,7 +77,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 
 type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved'
 
-export default function NotionEditor({ 
+export default function SnapDocsEditor({ 
   pageId,
   workspaceId, 
   initialBlocks = [], 
@@ -88,7 +88,7 @@ export default function NotionEditor({
   showSaveStatus = true,
   userId,
   onBlockUpdateReceived
-}: NotionEditorProps) {
+}: SnapDocsEditorProps) {
   const { 
     sendBlockUpdate, 
     sendBlockAdd, 
@@ -683,7 +683,7 @@ export default function NotionEditor({
 
   if (readOnly) {
     return (
-      <div className="notion-editor w-full">
+      <div className="snapdocs-editor w-full">
         {blocks.map((block) => (
           <BlockV2
             key={block.id}
@@ -698,7 +698,7 @@ export default function NotionEditor({
   }
 
   return (
-    <div className="notion-editor-container">
+    <div className="snapdocs-editor-container">
       {/* Save status indicator */}
       {showSaveStatus && (
         <div className="fixed top-4 right-4 z-50">
@@ -715,7 +715,7 @@ export default function NotionEditor({
         </div>
       )}
 
-      <div ref={editorRef} className="notion-editor relative w-full">
+      <div ref={editorRef} className="snapdocs-editor relative w-full">
         <DndContext 
           collisionDetection={closestCenter} 
           onDragStart={handleDragStart}

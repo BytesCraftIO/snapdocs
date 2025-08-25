@@ -48,11 +48,11 @@ interface Workspace {
   icon?: string | null
 }
 
-interface NotionSidebarProps {
+interface SnapDocsSidebarProps {
   user: User
 }
 
-export function NotionSidebar({ user }: NotionSidebarProps) {
+export function SnapDocsSidebar({ user }: SnapDocsSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])

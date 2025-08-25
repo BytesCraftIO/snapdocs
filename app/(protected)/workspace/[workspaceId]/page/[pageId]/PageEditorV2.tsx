@@ -4,14 +4,14 @@ import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Block, PageContent } from '@/types'
 import dynamic from 'next/dynamic'
-import { NotionPageHeader } from '@/components/page/notion-page-header'
+import { SnapDocsPageHeader } from '@/components/page/snapdocs-page-header'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { useSocket } from '@/lib/socket/client'
 
-// Dynamically import NotionEditor to avoid SSR hydration issues with DnD
-const NotionEditor = dynamic(
-  () => import('@/components/editor/NotionEditor'),
+// Dynamically import SnapDocsEditor to avoid SSR hydration issues with DnD
+const SnapDocsEditor = dynamic(
+  () => import('@/components/editor/SnapDocsEditor'),
   { 
     ssr: false,
     loading: () => (
@@ -287,14 +287,14 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#191919]">
-      {/* Notion-style Page Header */}
-      <NotionPageHeader 
+      {/* SnapDocs-style Page Header */}
+      <SnapDocsPageHeader 
         page={{...page, icon, coverImage, updatedAt: lastUpdated}} 
         workspaceId={page.workspaceId}
         onUpdate={handleRefresh}
       />
       
-      {/* Main Content - Notion-style centered layout */}
+      {/* Main Content - SnapDocs-style centered layout */}
       <div className="w-full px-[96px] pb-[30vh]">
         <div className="max-w-[900px] mx-auto">
           {/* Title */}
@@ -321,7 +321,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
 
           {/* Editor */}
           <div className="mt-2">
-            <NotionEditor
+            <SnapDocsEditor
               pageId={page.id}
               workspaceId={page.workspaceId}
               initialBlocks={initialBlocks}

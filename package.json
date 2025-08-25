@@ -1,6 +1,7 @@
 {
-  "name": "notion-clone",
+  "name": "snapdocs",
   "version": "0.1.0",
+  "description": "SnapDocs - A modern collaborative document workspace",
   "private": true,
   "scripts": {
     "dev": "node server.js",

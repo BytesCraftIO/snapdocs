@@ -1,4 +1,4 @@
-# Notion Clone - Feature Documentation
+# SnapDocs - Feature Documentation
 
 ## 🚀 Implemented Features
 
@@ -175,7 +175,7 @@
 
 ## 🎨 UI/UX Features
 
-- Clean, minimal interface inspired by Notion
+- Clean, minimal interface for collaborative documentation
 - Dark mode support (system preference)
 - Responsive design for mobile/tablet
 - Smooth animations and transitions
@@ -256,12 +256,12 @@ http://localhost:3000
 
 Ensure `.env.local` has:
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/notion_clone
-MONGODB_URI=mongodb://localhost:27017/notion_clone
+DATABASE_URL=postgresql://user:password@localhost:5432/snapdocs
+MONGODB_URI=mongodb://localhost:27017/snapdocs
 NEXTAUTH_SECRET=your-secret-key
 NEXTAUTH_URL=http://localhost:3000
 ```
 
 ## 🎉 Conclusion
 
-This Notion clone implements all major features of Notion with a clean, performant architecture. The codebase is well-structured, type-safe, and ready for production deployment or further development.
+SnapDocs implements all major features of a modern collaborative workspace with a clean, performant architecture. The codebase is well-structured, type-safe, and ready for production deployment or further development.

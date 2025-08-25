@@ -37,7 +37,7 @@ import toast from "react-hot-toast"
 import { cn } from "@/lib/utils"
 import { ActiveUsers } from "@/components/collaboration/ActiveUsers"
 
-interface NotionPageHeaderProps {
+interface SnapDocsPageHeaderProps {
   page: any
   workspaceId: string
   onUpdate?: () => void
@@ -45,7 +45,7 @@ interface NotionPageHeaderProps {
 
 const EMOJI_OPTIONS = ["📝", "📄", "📚", "📖", "💡", "🎯", "🚀", "💼", "📊", "🎨", "🔬", "✨", "🌟", "💎", "🏆", "🎉", "📌", "📍", "🔖", "📋"]
 
-export function NotionPageHeader({ page, workspaceId, onUpdate }: NotionPageHeaderProps) {
+export function SnapDocsPageHeader({ page, workspaceId, onUpdate }: SnapDocsPageHeaderProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)

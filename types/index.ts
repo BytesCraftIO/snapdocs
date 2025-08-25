@@ -1,4 +1,4 @@
-// Core types for Notion Clone
+// Core types for SnapDocs
 
 export interface User {
   id: string

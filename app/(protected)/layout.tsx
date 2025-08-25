@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
-import { NotionSidebar } from "@/components/layout/notion-sidebar"
+import { SnapDocsSidebar } from "@/components/layout/snapdocs-sidebar"
 import { ClientLayout } from "./ClientLayout"
 
 interface ProtectedLayoutProps {
@@ -17,7 +17,7 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
   return (
     <ClientLayout>
       <div className="flex h-screen bg-white dark:bg-[#191919]">
-        <NotionSidebar user={user} />
+        <SnapDocsSidebar user={user} />
         <main className="flex-1 overflow-auto">
           {children}
         </main>

@@ -1,6 +1,6 @@
-# Notion Clone
+# SnapDocs
 
-A full-featured Notion clone built with Next.js, PostgreSQL, MongoDB, and shadcn/ui. This application replicates core Notion functionality including rich text editing, nested pages, databases, real-time collaboration, and more.
+SnapDocs is a modern collaborative document workspace built with Next.js, PostgreSQL, MongoDB, and shadcn/ui. It provides powerful features for creating, organizing, and collaborating on documents with your team.
 
 ## 🚀 Features
 
@@ -53,7 +53,7 @@ A full-featured Notion clone built with Next.js, PostgreSQL, MongoDB, and shadcn
 ## 📁 Project Structure
 
 ```
-notion-clone/
+snapdocs/
 ├── app/                      # Next.js app directory
 │   ├── (auth)/              # Authentication pages
 │   ├── (main)/              # Main application
@@ -92,8 +92,8 @@ notion-clone/
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/notion-clone.git
-cd notion-clone
+git clone https://github.com/yourusername/snapdocs.git
+cd snapdocs
 ```
 
 2. **Install dependencies**
@@ -114,8 +114,8 @@ cp .env.example .env.local
 Edit `.env.local` with your configuration:
 ```env
 # Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/notion_clone"
-MONGODB_URI="mongodb://localhost:27017/notion_clone"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/snapdocs"
+MONGODB_URI="mongodb://localhost:27017/snapdocs"
 
 # Redis
 REDIS_URL="redis://localhost:6379"
@@ -128,7 +128,7 @@ NEXTAUTH_SECRET="your-secret-key"
 S3_ENDPOINT="http://localhost:9000"
 S3_ACCESS_KEY="minioadmin"
 S3_SECRET_KEY="minioadmin"
-S3_BUCKET="notion-clone"
+S3_BUCKET="snapdocs"
 
 # Real-time
 SOCKET_URL="http://localhost:3000"
@@ -252,8 +252,8 @@ npx shadcn-ui@latest add [component-name]
 
 ### Docker Production
 ```bash
-docker build -t notion-clone .
-docker run -p 3000:3000 notion-clone
+docker build -t snapdocs .
+docker run -p 3000:3000 snapdocs
 ```
 
 ### Manual Deployment
@@ -279,7 +279,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ## 🙏 Acknowledgments
 
-- Inspired by [Notion](https://notion.so)
+- Inspired by Notion's collaborative workspace concept
 - Built with [shadcn/ui](https://ui.shadcn.com)
 - Icons from [Lucide](https://lucide.dev)
 
@@ -291,4 +291,4 @@ For issues and questions:
 
 ---
 
-**Note**: This is an educational project and not affiliated with Notion Labs Inc.
+**Note**: This is an independent project and not affiliated with any other companies.

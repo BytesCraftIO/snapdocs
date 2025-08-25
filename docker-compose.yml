@@ -4,12 +4,12 @@ services:
   # PostgreSQL - Main relational database
   postgres:
     image: postgres:16-alpine
-    container_name: notion-postgres
+    container_name: snapdocs-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: notion_clone
+      POSTGRES_DB: snapdocs
     ports:
       - "5432:5432"
     volumes:
@@ -23,12 +23,12 @@ services:
   # MongoDB - Document store for page content
   mongodb:
     image: mongo:7.0
-    container_name: notion-mongodb
+    container_name: snapdocs-mongodb
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: notion_clone
+      MONGO_INITDB_DATABASE: snapdocs
     ports:
       - "27017:27017"
     volumes:
@@ -43,7 +43,7 @@ services:
   # Redis - Caching and session management
   redis:
     image: redis:7-alpine
-    container_name: notion-redis
+    container_name: snapdocs-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
@@ -59,7 +59,7 @@ services:
   # MinIO - S3-compatible object storage for files
   minio:
     image: minio/minio:latest
-    container_name: notion-minio
+    container_name: snapdocs-minio
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -79,15 +79,15 @@ services:
   # Create MinIO bucket on startup
   minio-setup:
     image: minio/mc:latest
-    container_name: notion-minio-setup
+    container_name: snapdocs-minio-setup
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb --ignore-existing myminio/notion-clone;
-      /usr/bin/mc anonymous set public myminio/notion-clone;
+      /usr/bin/mc mb --ignore-existing myminio/snapdocs;
+      /usr/bin/mc anonymous set public myminio/snapdocs;
       exit 0;
       "
 
@@ -103,5 +103,5 @@ volumes:
 
 networks:
   default:
-    name: notion-network
+    name: snapdocs-network
     driver: bridge

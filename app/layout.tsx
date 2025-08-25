@@ -7,8 +7,8 @@ import { AuthProvider } from '@/components/providers/auth-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Notion Clone',
-  description: 'A full-featured Notion clone built with Next.js',
+  title: 'SnapDocs - Collaborative Document Workspace',
+  description: 'SnapDocs - A modern collaborative document workspace for teams and individuals',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.ico',

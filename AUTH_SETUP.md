@@ -49,7 +49,7 @@ Make sure to set these in your `.env.local`:
 
 ```bash
 # Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/notion_clone"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/snapdocs"
 
 # NextAuth.js
 NEXTAUTH_SECRET="your-secret-key-here"
@@ -110,4 +110,4 @@ NEXTAUTH_URL="http://localhost:3000"
 3. Authenticated requests → Token validated → User session available
 4. Protected routes → Check authentication → Redirect if needed
 
-The system is ready for development and includes all necessary authentication features for a production-ready Notion clone.
+The system is ready for development and includes all necessary authentication features for a production-ready SnapDocs application.

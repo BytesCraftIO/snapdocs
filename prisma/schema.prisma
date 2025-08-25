@@ -107,7 +107,7 @@ model Page {
   @@index([isPublished, isArchived, isDeleted])
 }
 
-// Database model (Notion database)
+// Database model (snapdocs database)
 model Database {
   id            String    @id @default(cuid())
   name          String

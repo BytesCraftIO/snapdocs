@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a full-featured Notion clone built with:
+SnapDocs is a modern collaborative document workspace built with:
 - **Next.js 14** (App Router) for the frontend and API
 - **PostgreSQL** for structured data (users, workspaces, page metadata)
 - **MongoDB** for document storage (page content blocks)
@@ -116,7 +116,7 @@ See `prisma/schema.prisma` for the complete schema. Key models:
 - `User` - User accounts
 - `Workspace` - Team workspaces
 - `Page` - Page metadata
-- `Database` - Notion databases
+- `Database` - SnapDocs databases
 - `Permission` - Access control
 
 ### Environment Variables

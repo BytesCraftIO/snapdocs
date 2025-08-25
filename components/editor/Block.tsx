@@ -289,7 +289,7 @@ export default function Block({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "notion-block-wrapper relative", // Wrapper for the entire block including handles
+        "snapdocs-block-wrapper relative", // Wrapper for the entire block including handles
         isDragging && "z-50"
       )}
       onMouseEnter={() => !readOnly && setShowMenu(true)}
@@ -300,7 +300,7 @@ export default function Block({
     >
       {/* Block controls - positioned absolutely to the left */}
       {!readOnly && (showMenu || isSelected) && (
-        <div className="notion-block-handle flex items-center gap-1 absolute -left-12 md:-left-16 top-1 z-10">
+        <div className="snapdocs-block-handle flex items-center gap-1 absolute -left-12 md:-left-16 top-1 z-10">
           <button
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded opacity-60 hover:opacity-100 transition-opacity"
             onClick={() => onAddBlock?.('paragraph')}

@@ -15,7 +15,7 @@ import {
   Menu
 } from 'lucide-react'
 import { Block, PageContent } from '@/types'
-import NotionEditor from '@/components/editor/NotionEditor'
+import SnapDocsEditor from '@/components/editor/SnapDocsEditor'
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -289,7 +289,7 @@ export default function PageEditor({ page, initialContent, user }: PageEditorPro
           </div>
 
           {/* Editor */}
-          <NotionEditor
+          <SnapDocsEditor
             pageId={page.id}
             initialBlocks={initialBlocks}
             onAutoSave={handleAutoSave}

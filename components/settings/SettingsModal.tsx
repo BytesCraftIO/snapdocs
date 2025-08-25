@@ -588,7 +588,7 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
         <div className="space-y-4">
           <Label className="text-sm font-medium">Theme</Label>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Choose how Notion looks to you
+            Choose how SnapDocs looks to you
           </p>
           
           <div className="grid grid-cols-3 gap-3">
