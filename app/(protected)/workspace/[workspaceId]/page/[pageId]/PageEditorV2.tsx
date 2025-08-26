@@ -9,9 +9,9 @@ import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { useSocket } from '@/lib/socket/client'
 
-// Dynamically import SnapDocsEditor to avoid SSR hydration issues with DnD
-const SnapDocsEditor = dynamic(
-  () => import('@/components/editor/SnapDocsEditor'),
+// Dynamically import BlockNoteEditor to avoid SSR hydration issues
+const BlockNoteEditor = dynamic(
+  () => import('@/components/editor/BlockNoteEditor'),
   { 
     ssr: false,
     loading: () => (
@@ -321,7 +321,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
 
           {/* Editor */}
           <div className="mt-2">
-            <SnapDocsEditor
+            <BlockNoteEditor
               pageId={page.id}
               workspaceId={page.workspaceId}
               initialBlocks={initialBlocks}
