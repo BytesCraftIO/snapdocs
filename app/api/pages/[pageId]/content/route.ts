@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { pageContentService } from '@/lib/services/page-content'
 import { Block } from '@/types'
+import { ensureMentionsPopulated } from '@/lib/utils/mentions'
 
 // GET /api/pages/[pageId]/content - Get page content
 export async function GET(
@@ -34,17 +35,35 @@ export async function GET(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to access
-    if (page.authorId !== session.user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: page.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Get page content from MongoDB
     const pageContent = await pageContentService.loadPageContent(pageId)
+    
+    // Ensure mentions are populated in blocks
+    let processedContent = pageContent
+    if (pageContent && pageContent.blocks && pageContent.blocks.length > 0) {
+      const processedBlocks = await ensureMentionsPopulated(pageContent.blocks)
+      processedContent = {
+        ...pageContent,
+        blocks: processedBlocks
+      }
+    }
 
     return NextResponse.json({
-      pageContent: pageContent || {
+      pageContent: processedContent || {
         pageId,
         blocks: [],
         version: 1,
@@ -100,20 +119,22 @@ export async function PUT(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to edit
-    if (page.authorId !== user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: page.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Save existing content to history before updating
-    const existingContent = await pageContentService.loadPageContent(pageId)
-    if (existingContent) {
-      await pageContentService.saveToHistory(existingContent)
-    }
-
-    // Save new content
-    const savedContent = await pageContentService.savePageContent(pageId, blocks)
+    // Save content immediately (optimized for real-time collaboration)
+    const savedContent = await pageContentService.savePageContent(pageId, blocks, user.id)
 
     // Update page metadata in PostgreSQL
     await prisma.page.update({
@@ -164,9 +185,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to delete
-    if (page.authorId !== session.user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: page.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

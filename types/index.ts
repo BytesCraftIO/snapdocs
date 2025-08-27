@@ -1,4 +1,4 @@
-// Core types for Notion Clone
+// Core types for SnapDocs
 
 export interface User {
   id: string
@@ -27,6 +27,7 @@ export interface Page {
   isPublished: boolean
   isArchived: boolean
   isDeleted: boolean
+  isFavorite: boolean
   path: string
   order: number
   workspaceId: string
@@ -382,7 +383,6 @@ export interface PageTreeNode extends Page {
   children: PageTreeNode[]
   depth: number
   hasChildren: boolean
-  isFavorite?: boolean
 }
 
 export interface PageTreeMeta {

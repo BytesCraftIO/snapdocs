@@ -2,16 +2,19 @@
 
 import React from 'react'
 import { Block, HeadingProperties } from '@/types'
-import ContentEditableV2 from '../ContentEditableV2'
+import MentionInput from '../MentionInput'
 import { cn } from '@/lib/utils'
 
 interface HeadingBlockProps {
   block: Block
-  onUpdate?: (content: string) => void
+  onUpdate?: (content: string, mentions?: any) => void
   onKeyDown?: (e: React.KeyboardEvent) => void
   onFocus?: () => void
   onBlur?: () => void
   readOnly?: boolean
+  workspaceId?: string
+  pageId?: string
+  blockId?: string
 }
 
 export default function HeadingBlock({
@@ -20,13 +23,19 @@ export default function HeadingBlock({
   onKeyDown,
   onFocus,
   onBlur,
-  readOnly = false
+  readOnly = false,
+  workspaceId,
+  pageId,
+  blockId
 }: HeadingBlockProps) {
   const content = typeof block.content === 'string' 
     ? block.content 
     : Array.isArray(block.content) 
       ? block.content.map(rt => rt.text).join('')
       : ''
+  
+  // Extract mentions from block properties
+  const mentions = (block.properties as any)?.mentions || {}
 
   const getHeadingStyles = () => {
     switch (block.type) {
@@ -54,16 +63,25 @@ export default function HeadingBlock({
     }
   }
 
+  const handleChange = (newContent: string, newMentions?: any) => {
+    // Pass both content and mentions to parent
+    onUpdate?.(newContent, newMentions)
+  }
+
   return (
-    <ContentEditableV2
+    <MentionInput
       content={content}
-      onChange={onUpdate || (() => {})}
+      mentions={mentions}
+      blockId={blockId || block.id}
+      onChange={handleChange}
       onKeyDown={onKeyDown}
       onFocus={onFocus}
       onBlur={onBlur}
       className={cn("w-full outline-none", getHeadingStyles())}
       placeholder={getPlaceholder()}
       readOnly={readOnly}
+      workspaceId={workspaceId}
+      pageId={pageId}
     />
   )
 }

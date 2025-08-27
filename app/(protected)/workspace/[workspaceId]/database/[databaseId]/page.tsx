@@ -64,18 +64,32 @@ export default async function DatabasePage({ params }: DatabasePageProps) {
 
   // Transform the data for the client component
   const transformedDatabase = {
-    ...database,
+    id: database.id,
+    name: database.name,
+    description: database.description || undefined,
+    icon: undefined, // TODO: Add icon field to database model
+    cover: undefined, // TODO: Add cover field to database model
     properties: database.properties as any[],
     views: database.views.map(view => ({
       ...view,
+      type: view.type.toLowerCase() as any, // Convert from Prisma enum to TypeScript type
       filters: [], // TODO: Parse from config
       sorts: [], // TODO: Parse from config
       properties: {}, // TODO: Parse from config
       config: view.config as any
     })),
+    defaultView: database.views[0]?.id,
+    workspaceId: database.workspaceId,
+    pageId: database.pageId || undefined,
+    createdAt: database.createdAt,
+    updatedAt: database.updatedAt,
     rows: database.rows.map(row => ({
       ...row,
-      properties: row.properties as Record<string, any>
+      databaseId: database.id,
+      properties: row.properties as Record<string, any>,
+      createdBy: session.user.id, // TODO: Store actual creator
+      lastEditedBy: session.user.id, // TODO: Track last editor
+      lastEditedTime: row.updatedAt
     }))
   }
 

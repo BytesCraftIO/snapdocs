@@ -20,7 +20,7 @@ interface FilterMenuProps {
   onFiltersChange: (filters: DatabaseFilter[]) => void
 }
 
-const filterConditions: FilterConditions = {
+const filterConditionOptions: Record<string, string[]> = {
   text: ['equals', 'does_not_equal', 'contains', 'does_not_contain', 'starts_with', 'ends_with', 'is_empty', 'is_not_empty'],
   number: ['equals', 'does_not_equal', 'greater_than', 'less_than', 'greater_than_or_equal_to', 'less_than_or_equal_to', 'is_empty', 'is_not_empty'],
   select: ['equals', 'does_not_equal', 'is_empty', 'is_not_empty'],
@@ -95,7 +95,7 @@ export function FilterMenu({ database, filters, onFiltersChange }: FilterMenuPro
   }
 
   const getDefaultCondition = (propertyType: string): string => {
-    const conditions = filterConditions[propertyType as keyof FilterConditions]
+    const conditions = filterConditionOptions[propertyType]
     return conditions?.[0] || 'equals'
   }
 
@@ -104,7 +104,7 @@ export function FilterMenu({ database, filters, onFiltersChange }: FilterMenuPro
   }
 
   const getConditionsForProperty = (property: DatabaseProperty) => {
-    return filterConditions[property.type as keyof FilterConditions] || []
+    return filterConditionOptions[property.type] || []
   }
 
   const needsValue = (condition: string) => {

@@ -1,14 +1,14 @@
 // MongoDB initialization script
-db = db.getSiblingDB('notion_clone');
+db = db.getSiblingDB('snapdocs');
 
 // Create user for the application
 db.createUser({
-  user: 'notion_user',
-  pwd: 'notion_password',
+  user: 'snapdocs_user',
+  pwd: 'snapdocs_password',
   roles: [
     {
       role: 'readWrite',
-      db: 'notion_clone'
+      db: 'snapdocs'
     }
   ]
 });

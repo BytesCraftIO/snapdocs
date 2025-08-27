@@ -1,6 +1,20 @@
 import { getMongoDb } from '@/lib/db/mongodb'
 import { Block, PageContent } from '@/types'
 
+/**
+ * Simplified page content service that stores BlockNote blocks directly in MongoDB
+ * Each block maintains its native BlockNote structure
+ */
+
+interface PageDocument {
+  pageId: string
+  blocks: any[] // Store BlockNote blocks as-is
+  version: number
+  lastEditedBy?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export class PageContentService {
   private async getDb() {
     return await getMongoDb()
@@ -9,28 +23,35 @@ export class PageContentService {
   /**
    * Save page content to MongoDB
    */
-  async savePageContent(pageId: string, blocks: Block[]): Promise<PageContent> {
+  async savePageContent(pageId: string, blocks: Block[], userId?: string): Promise<PageContent> {
     const db = await this.getDb()
-    const collection = db.collection<PageContent>('pageContent')
+    const collection = db.collection<PageDocument>('pageContent')
     
     const now = new Date()
     const existingContent = await collection.findOne({ pageId })
     
-    const pageContent: PageContent = {
+    const pageDocument: PageDocument = {
       pageId,
-      blocks,
+      blocks: blocks as any[], // Store blocks in their native format
       version: existingContent ? existingContent.version + 1 : 1,
+      lastEditedBy: userId,
       createdAt: existingContent?.createdAt || now,
       updatedAt: now
     }
     
     await collection.replaceOne(
       { pageId },
-      pageContent,
+      pageDocument,
       { upsert: true }
     )
     
-    return pageContent
+    return {
+      pageId,
+      blocks,
+      version: pageDocument.version,
+      createdAt: pageDocument.createdAt,
+      updatedAt: pageDocument.updatedAt
+    }
   }
 
   /**
@@ -38,20 +59,21 @@ export class PageContentService {
    */
   async loadPageContent(pageId: string): Promise<PageContent | null> {
     const db = await this.getDb()
-    const collection = db.collection<PageContent>('pageContent')
+    const collection = db.collection<PageDocument>('pageContent')
     
     const content = await collection.findOne({ pageId })
     
     if (content) {
-      // Remove MongoDB-specific fields and return clean object
+      // Remove MongoDB-specific fields
       const { _id, ...cleanContent } = content as any
+      
       return {
         pageId: cleanContent.pageId,
         blocks: cleanContent.blocks || [],
         version: cleanContent.version || 1,
-        createdAt: cleanContent.createdAt ? new Date(cleanContent.createdAt).toISOString() : new Date().toISOString(),
-        updatedAt: cleanContent.updatedAt ? new Date(cleanContent.updatedAt).toISOString() : new Date().toISOString()
-      } as PageContent
+        createdAt: cleanContent.createdAt ? new Date(cleanContent.createdAt) : new Date(),
+        updatedAt: cleanContent.updatedAt ? new Date(cleanContent.updatedAt) : new Date()
+      }
     }
     
     return null
@@ -62,7 +84,7 @@ export class PageContentService {
    */
   async deletePageContent(pageId: string): Promise<boolean> {
     const db = await this.getDb()
-    const collection = db.collection<PageContent>('pageContent')
+    const collection = db.collection<PageDocument>('pageContent')
     
     const result = await collection.deleteOne({ pageId })
     return result.deletedCount > 0
@@ -73,7 +95,7 @@ export class PageContentService {
    */
   async getContentHistory(pageId: string, limit: number = 10): Promise<PageContent[]> {
     const db = await this.getDb()
-    const collection = db.collection<PageContent>('pageContentHistory')
+    const collection = db.collection<PageDocument>('pageContentHistory')
     
     const history = await collection
       .find({ pageId })
@@ -81,7 +103,13 @@ export class PageContentService {
       .limit(limit)
       .toArray()
     
-    return history
+    return history.map(doc => ({
+      pageId: doc.pageId,
+      blocks: doc.blocks,
+      version: doc.version,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt
+    }))
   }
 
   /**
@@ -89,7 +117,7 @@ export class PageContentService {
    */
   async saveToHistory(pageContent: PageContent): Promise<void> {
     const db = await this.getDb()
-    const collection = db.collection<PageContent>('pageContentHistory')
+    const collection = db.collection<PageDocument>('pageContentHistory')
     
     // Keep only last 50 versions per page
     const count = await collection.countDocuments({ pageId: pageContent.pageId })
@@ -107,7 +135,15 @@ export class PageContentService {
       })
     }
     
-    await collection.insertOne(pageContent)
+    const pageDocument: PageDocument = {
+      pageId: pageContent.pageId,
+      blocks: pageContent.blocks,
+      version: pageContent.version,
+      createdAt: new Date(pageContent.createdAt),
+      updatedAt: new Date(pageContent.updatedAt)
+    }
+    
+    await collection.insertOne(pageDocument)
   }
 
   /**
@@ -117,26 +153,36 @@ export class PageContentService {
     const sourceContent = await this.loadPageContent(sourcePageId)
     if (!sourceContent) return null
     
-    // Deep clone blocks and assign new IDs
-    const clonedBlocks = this.cloneBlocks(sourceContent.blocks)
+    // Clone blocks with new IDs
+    const clonedBlocks = sourceContent.blocks.map((block: any) => ({
+      ...block,
+      id: this.generateId()
+    }))
     
     return await this.savePageContent(targetPageId, clonedBlocks)
   }
 
   /**
-   * Clone blocks with new IDs
+   * Update specific block in page content
    */
-  private cloneBlocks(blocks: Block[]): Block[] {
-    const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  async updateBlock(pageId: string, blockId: string, updates: Partial<Block>): Promise<boolean> {
+    const content = await this.loadPageContent(pageId)
+    if (!content) return false
     
-    return blocks.map((block, index) => ({
-      ...block,
-      id: generateId(),
-      order: index,
-      children: block.children ? this.cloneBlocks(block.children) : undefined,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }))
+    let blockUpdated = false
+    const updatedBlocks = content.blocks.map((block: any) => {
+      if (block.id === blockId) {
+        blockUpdated = true
+        return { ...block, ...updates }
+      }
+      return block
+    })
+    
+    if (blockUpdated) {
+      await this.savePageContent(pageId, updatedBlocks)
+    }
+    
+    return blockUpdated
   }
 
   /**
@@ -144,7 +190,7 @@ export class PageContentService {
    */
   async searchContent(workspaceId: string, query: string): Promise<Array<{ pageId: string; matches: Array<{ blockId: string; content: string; type: string }> }>> {
     const db = await this.getDb()
-    const collection = db.collection<PageContent>('pageContent')
+    const collection = db.collection<PageDocument>('pageContent')
     
     const searchResults = await collection
       .find({
@@ -155,20 +201,20 @@ export class PageContentService {
     return searchResults.map(content => ({
       pageId: content.pageId,
       matches: content.blocks
-        .filter(block => {
+        .filter((block: any) => {
           const blockContent = typeof block.content === 'string' 
             ? block.content 
             : Array.isArray(block.content) 
-              ? block.content.map(rt => rt.text).join(' ')
+              ? block.content.map((rt: any) => rt.text || '').join(' ')
               : ''
           return blockContent.toLowerCase().includes(query.toLowerCase())
         })
-        .map(block => ({
+        .map((block: any) => ({
           blockId: block.id,
           content: typeof block.content === 'string' 
             ? block.content 
             : Array.isArray(block.content) 
-              ? block.content.map(rt => rt.text).join(' ')
+              ? block.content.map((rt: any) => rt.text || '').join(' ')
               : '',
           type: block.type
         }))
@@ -176,11 +222,11 @@ export class PageContentService {
   }
 
   /**
-   * Get blocks by type across all pages in workspace
+   * Get blocks by type across all pages
    */
   async getBlocksByType(workspaceId: string, blockType: string): Promise<Array<{ pageId: string; blocks: Block[] }>> {
     const db = await this.getDb()
-    const collection = db.collection<PageContent>('pageContent')
+    const collection = db.collection<PageDocument>('pageContent')
     
     const results = await collection
       .find({
@@ -190,36 +236,12 @@ export class PageContentService {
     
     return results.map(content => ({
       pageId: content.pageId,
-      blocks: content.blocks.filter(block => block.type === blockType)
+      blocks: content.blocks.filter((block: any) => block.type === blockType)
     }))
   }
 
-  /**
-   * Update specific block in page content
-   */
-  async updateBlock(pageId: string, blockId: string, updates: Partial<Block>): Promise<boolean> {
-    const content = await this.loadPageContent(pageId)
-    if (!content) return false
-    
-    const updateBlockRecursive = (blocks: Block[]): boolean => {
-      for (let i = 0; i < blocks.length; i++) {
-        if (blocks[i].id === blockId) {
-          blocks[i] = { ...blocks[i], ...updates, updatedAt: new Date() }
-          return true
-        }
-        if (blocks[i].children && updateBlockRecursive(blocks[i].children!)) {
-          return true
-        }
-      }
-      return false
-    }
-    
-    const updated = updateBlockRecursive(content.blocks)
-    if (updated) {
-      await this.savePageContent(pageId, content.blocks)
-    }
-    
-    return updated
+  private generateId(): string {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   }
 }
 

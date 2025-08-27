@@ -3,10 +3,24 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Block, PageContent } from '@/types'
-import NotionEditor from '@/components/editor/NotionEditor'
-import { NotionPageHeader } from '@/components/page/notion-page-header'
+import dynamic from 'next/dynamic'
+import { SnapDocsPageHeader } from '@/components/page/snapdocs-page-header'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { useSocket } from '@/lib/socket/client'
+
+// Dynamically import BlockNoteEditor to avoid SSR hydration issues
+const BlockNoteEditor = dynamic(
+  () => import('@/components/editor/BlockNoteEditor'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+)
 
 interface PageData {
   id: string
@@ -15,6 +29,7 @@ interface PageData {
   coverImage?: string
   isPublished: boolean
   isArchived: boolean
+  isFavorite?: boolean
   path: string
   workspaceId: string
   authorId: string
@@ -50,16 +65,36 @@ interface PageEditorProps {
 
 export default function PageEditorV2({ page, initialContent, user }: PageEditorProps) {
   const router = useRouter()
+  const { isConnected, joinPage, leavePage } = useSocket()
   const [title, setTitle] = useState(page.title || '')
   const [icon, setIcon] = useState(page.icon || '')
   const [coverImage, setCoverImage] = useState(page.coverImage || '')
   const [showCoverOptions, setShowCoverOptions] = useState(false)
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(page.updatedAt)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const initialBlocks = initialContent?.blocks || []
+
+  // Join the page room for real-time collaboration
+  useEffect(() => {
+    if (isConnected && user) {
+      joinPage(page.id, page.workspaceId, {
+        id: user.id,
+        name: user.name || 'Anonymous',
+        email: user.email || '',
+        avatarUrl: null
+      })
+    }
+    
+    // Clean up when leaving the page
+    return () => {
+      leavePage()
+    }
+  }, [isConnected, page.id, page.workspaceId, user, joinPage, leavePage])
+
 
   // Auto-resize title textarea
   useEffect(() => {
@@ -75,7 +110,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
     
     try {
       const response = await fetch(`/api/pages/${page.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -87,12 +122,18 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
       if (!response.ok) {
         throw new Error('Failed to save title')
       }
+      
+      // Update the last updated timestamp
+      setLastUpdated(new Date().toISOString())
+      
+      // Refresh the router to update the sidebar
+      router.refresh()
     } catch (error) {
       console.error('Error saving title:', error)
       toast.error('Failed to save title')
       setTitle(page.title || '')
     }
-  }, [page.id, page.title])
+  }, [page.id, page.title, router])
 
   // Debounced title save
   useEffect(() => {
@@ -106,7 +147,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
   }, [title, page.title, saveTitle])
 
   // Auto-save page content
-  const handleAutoSave = useCallback(async (blocks: Block[]) => {
+  const handleAutoSave = useCallback(async (newBlocks: Block[]) => {
     setIsSaving(true)
     
     try {
@@ -116,13 +157,18 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          blocks
+          blocks: newBlocks
         }),
       })
 
+      const data = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Failed to save content')
+        throw new Error(data.error || 'Failed to save content')
       }
+      
+      // Update the last updated timestamp
+      setLastUpdated(new Date().toISOString())
     } catch (error) {
       console.error('Error saving content:', error)
       toast.error('Failed to save content')
@@ -178,6 +224,9 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
       if (!response.ok) {
         throw new Error('Failed to save page')
       }
+      
+      // Update the last updated timestamp
+      setLastUpdated(new Date().toISOString())
     } catch (error) {
       console.error('Error saving page:', error)
       toast.error('Failed to save changes')
@@ -234,49 +283,55 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
   const handleRefresh = () => {
     router.refresh()
   }
+  
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#191919]">
-      {/* Notion-style Page Header */}
-      <NotionPageHeader 
-        page={{...page, icon, coverImage}} 
+      {/* SnapDocs-style Page Header */}
+      <SnapDocsPageHeader 
+        page={{...page, icon, coverImage, updatedAt: lastUpdated}} 
         workspaceId={page.workspaceId}
         onUpdate={handleRefresh}
       />
       
-      {/* Main Content */}
-      <div className="max-w-[900px] mx-auto px-[96px] pb-[30vh]">
-        {/* Title */}
-        <div className={cn(
-          "pt-4",
-          !icon && !coverImage && "pt-[5vh]"
-        )}>
-          <textarea
-            ref={titleRef}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Untitled"
-            className={cn(
-              "w-full bg-transparent border-none outline-none resize-none",
-              "text-[40px] font-bold text-[#37352f] dark:text-[#e9e9e7] leading-[1.2]",
-              "placeholder:text-[#37352f4d] dark:placeholder:text-[#e9e9e780]"
-            )}
-            rows={1}
-            style={{ 
-              fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"'
-            }}
-          />
-        </div>
+      {/* Main Content - SnapDocs-style centered layout */}
+      <div className="w-full px-[96px] pb-[30vh]">
+        <div className="max-w-[900px] mx-auto">
+          {/* Title */}
+          <div className={cn(
+            "pt-4",
+            !icon && !coverImage && "pt-[5vh]"
+          )}>
+            <textarea
+              ref={titleRef}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Untitled"
+              className={cn(
+                "w-full bg-transparent border-none outline-none resize-none",
+                "text-[40px] font-bold text-[#37352f] dark:text-[#e9e9e7] leading-[1.2]",
+                "placeholder:text-[#37352f4d] dark:placeholder:text-[#e9e9e780]"
+              )}
+              rows={1}
+              style={{ 
+                fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"'
+              }}
+            />
+          </div>
 
-        {/* Editor */}
-        <div className="mt-2">
-          <NotionEditor
-            pageId={page.id}
-            initialBlocks={initialBlocks}
-            onAutoSave={handleAutoSave}
-            showSaveStatus={false}
-            autoSaveInterval={2000}
-          />
+          {/* Editor */}
+          <div className="mt-2">
+            <BlockNoteEditor
+              pageId={page.id}
+              workspaceId={page.workspaceId}
+              initialBlocks={initialBlocks}
+              onAutoSave={handleAutoSave}
+              showSaveStatus={false}
+              autoSaveInterval={2000}
+              userId={user?.id}
+              user={user}
+            />
+          </div>
         </div>
       </div>
     </div>

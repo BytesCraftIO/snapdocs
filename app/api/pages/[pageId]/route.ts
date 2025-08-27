@@ -52,9 +52,17 @@ export async function GET(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to access
-    if (page.authorId !== user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: page.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -127,9 +135,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to edit
-    if (existingPage.authorId !== user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: existingPage.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -199,20 +215,58 @@ export async function DELETE(
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
-    // TODO: Implement proper permission checking
-    // For now, only allow page owner to delete
-    if (page.authorId !== user.id) {
+    // Check if user is a member of the workspace
+    const workspaceMember = await prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId: page.workspaceId
+        }
+      }
+    })
+
+    if (!workspaceMember) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Soft delete the page in PostgreSQL
-    await prisma.page.update({
-      where: { id: pageId },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        updatedAt: new Date()
+    // Get all descendant pages (recursive)
+    const getAllDescendants = async (parentId: string): Promise<string[]> => {
+      const children = await prisma.page.findMany({
+        where: {
+          parentId: parentId,
+          isDeleted: false
+        },
+        select: { id: true }
+      })
+      
+      let allDescendants = children.map(c => c.id)
+      
+      for (const child of children) {
+        const childDescendants = await getAllDescendants(child.id)
+        allDescendants = [...allDescendants, ...childDescendants]
       }
+      
+      return allDescendants
+    }
+    
+    // Get all pages to delete (current page + all descendants)
+    const descendantIds = await getAllDescendants(pageId)
+    const allPageIds = [pageId, ...descendantIds]
+    
+    // Soft delete all pages (parent and descendants) in a transaction
+    await prisma.$transaction(async (tx) => {
+      await tx.page.updateMany({
+        where: {
+          id: {
+            in: allPageIds
+          }
+        },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          updatedAt: new Date()
+        }
+      })
     })
 
     // Optionally delete content from MongoDB

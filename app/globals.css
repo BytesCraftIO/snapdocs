@@ -118,11 +118,11 @@
 }
 
 /* Editor styles */
-.notion-editor {
+.snapdocs-editor {
   @apply min-h-full;
 }
 
-.notion-editor-container {
+.snapdocs-editor-container {
   @apply relative min-h-full;
 }
 

@@ -62,9 +62,7 @@ export async function PUT(
       },
       data: {
         properties: updatedProperties,
-        ...(order !== undefined && { order }),
-        lastEditedBy: session.user.id,
-        lastEditedTime: new Date()
+        ...(order !== undefined && { order })
       }
     })
 

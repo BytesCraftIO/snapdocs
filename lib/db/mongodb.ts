@@ -4,7 +4,7 @@ declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined
 }
 
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/notion_clone'
+const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapdocs'
 const options = {}
 
 let client: MongoClient
@@ -23,7 +23,7 @@ if (process.env.NODE_ENV === 'development') {
 
 export async function getMongoDb(): Promise<Db> {
   const client = await clientPromise
-  return client.db('notion_clone')
+  return client.db('snapdocs')
 }
 
 export default clientPromise

@@ -46,57 +46,37 @@ async function getWorkspaceData(workspaceId: string, userId: string) {
     return null
   }
 
-  // Get recent pages in workspace
+  // Get recent pages that the user has created or edited
   const recentPages = await prisma.page.findMany({
     where: {
       workspaceId: workspace.id,
       isDeleted: false,
-      isArchived: false
+      isArchived: false,
+      OR: [
+        { authorId: userId },  // Pages created by the user
+        { 
+          updatedAt: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Pages updated in last 30 days
+          }
+        }
+      ]
     },
     orderBy: {
       updatedAt: 'desc'
     },
-    take: 10,
-    include: {
-      author: {
-        select: {
-          name: true,
-          avatarUrl: true
-        }
-      }
+    take: 15,  // Show up to 15 recent pages
+    select: {
+      id: true,
+      title: true,
+      icon: true,
+      updatedAt: true,
+      authorId: true
     }
   })
 
-  // Get workspace statistics
-  const [totalPages, archivedPages, totalMembers] = await Promise.all([
-    prisma.page.count({
-      where: {
-        workspaceId: workspace.id,
-        isDeleted: false
-      }
-    }),
-    prisma.page.count({
-      where: {
-        workspaceId: workspace.id,
-        isArchived: true,
-        isDeleted: false
-      }
-    }),
-    prisma.workspaceMember.count({
-      where: {
-        workspaceId: workspace.id
-      }
-    })
-  ])
-
   return {
     workspace,
-    recentPages,
-    stats: {
-      totalPages,
-      archivedPages,
-      totalMembers
-    }
+    recentPages
   }
 }
 
@@ -114,13 +94,12 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     notFound()
   }
 
-  const { workspace, recentPages, stats } = data
+  const { workspace, recentPages } = data
 
   return (
     <WorkspaceDashboard 
       workspace={workspace}
       recentPages={recentPages}
-      stats={stats}
       currentUser={user}
     />
   )

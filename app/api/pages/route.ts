@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const where: any = {
-      isDeleted: false,
-      authorId: user.id // TODO: Extend to workspace permissions
+      isDeleted: false
     }
 
     if (workspaceId) {
@@ -114,16 +113,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify workspace exists and user has access
-    const workspace = await prisma.workspace.findFirst({
+    // Verify workspace exists and user is a member
+    const workspaceMember = await prisma.workspaceMember.findUnique({
       where: {
-        id: workspaceId,
-        // TODO: Add workspace membership check
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId
+        }
       }
     })
 
-    if (!workspace) {
-      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+    if (!workspaceMember) {
+      return NextResponse.json({ error: 'You are not a member of this workspace' }, { status: 403 })
     }
 
     // If parentId provided, verify parent page exists and user has access

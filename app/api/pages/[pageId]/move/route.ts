@@ -66,14 +66,24 @@ export async function POST(
       where: { workspaceId, isDeleted: false }
     })
 
-    const pageTree = buildPageTree(allPages)
+    // Transform null values to undefined for compatibility
+    const transformedPages = allPages.map(page => ({
+      ...page,
+      icon: page.icon || undefined,
+      coverImage: page.coverImage || undefined,
+      parentId: page.parentId || undefined,
+      publishedAt: page.publishedAt || undefined,
+      deletedAt: page.deletedAt || undefined
+    }))
+
+    const pageTree = buildPageTree(transformedPages)
 
     // Validate the move operation
     const moveOperation = {
       pageId,
       newParentId: position === 'inside' ? targetPageId : targetPage.parentId,
       newOrder: 0, // Will be calculated
-      oldParentId: pageToMove.parentId,
+      oldParentId: pageToMove.parentId || undefined,
       oldOrder: pageToMove.order
     }
 
@@ -89,11 +99,11 @@ export async function POST(
     if (position === 'inside') {
       newParentId = targetPageId
       // Get children of target to calculate order
-      const children = allPages.filter(p => p.parentId === targetPageId)
+      const children = transformedPages.filter(p => p.parentId === targetPageId)
       newOrder = calculateNewOrder(children, children.length)
     } else {
       // Get siblings of target page
-      const siblings = allPages.filter(p => p.parentId === targetPage.parentId)
+      const siblings = transformedPages.filter(p => p.parentId === targetPage.parentId)
       const targetIndex = siblings.findIndex(p => p.id === targetPageId)
       
       if (position === 'before') {

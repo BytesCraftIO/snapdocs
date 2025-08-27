@@ -50,8 +50,18 @@ export async function GET(
       ]
     })
 
+    // Transform null values to undefined for compatibility
+    const transformedPages = pages.map(page => ({
+      ...page,
+      icon: page.icon || undefined,
+      coverImage: page.coverImage || undefined,
+      parentId: page.parentId || undefined,
+      publishedAt: page.publishedAt || undefined,
+      deletedAt: page.deletedAt || undefined
+    }))
+
     // Build the tree structure
-    const pageTree = buildPageTree(pages)
+    const pageTree = buildPageTree(transformedPages)
 
     // Get user's favorite pages (this would be from a user preferences table)
     const favoritePageIds: string[] = [] // TODO: Implement favorites

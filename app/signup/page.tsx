@@ -85,9 +85,10 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-neutral-900">
       <div className="w-full max-w-sm space-y-6 p-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
+          <h1 className="text-3xl font-bold">SnapDocs</h1>
+          <h2 className="text-xl font-semibold tracking-tight">Create an account</h2>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Enter your email to create your account
+            Join SnapDocs to start collaborating
           </p>
         </div>
 

@@ -6,8 +6,12 @@ import { DatabaseContainer } from '@/components/database'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
+interface DatabaseWithRows extends Database {
+  rows: DatabaseRow[]
+}
+
 interface DatabasePageClientProps {
-  database: Database
+  database: DatabaseWithRows
   workspaceId: string
 }
 

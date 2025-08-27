@@ -28,7 +28,7 @@ export default async function DashboardPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center space-y-4 p-8">
-          <h1 className="text-2xl font-semibold">Welcome to Notion Clone</h1>
+          <h1 className="text-2xl font-semibold">Welcome to SnapDocs</h1>
           <p className="text-neutral-600 dark:text-neutral-400">
             Create your first workspace from the sidebar dropdown to get started
           </p>

@@ -56,7 +56,7 @@ export default function DemoPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <Zap className="h-6 w-6 text-blue-600" />
-              <span className="font-bold text-xl">Notion Clone</span>
+              <span className="font-bold text-xl">SnapDocs</span>
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/login">
@@ -75,7 +75,7 @@ export default function DemoPage() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Welcome to Notion Clone Demo
+            Welcome to SnapDocs Demo
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Experience the power of a flexible workspace. Create documents, databases, 

@@ -93,7 +93,7 @@ export function PageTree({
         level={level}
         isSelected={selectedPageId === node.id}
         isExpanded={expandedPageIds.has(node.id)}
-        isFavorite={node.isFavorite}
+        isFavorite={node.isFavorite || false}
         isDragging={draggedPageId === node.id}
         dropTarget={dropTarget?.pageId === node.id ? dropTarget.position : null}
         onSelect={() => onPageSelect(node.id)}
