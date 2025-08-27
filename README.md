@@ -10,6 +10,10 @@
   </p>
   
   <p>
+    <strong>⚠️ Beta Status: This project is under active development. Features may change.</strong>
+  </p>
+  
+  <p>
     <a href="https://github.com/yourusername/snapdocs/stargazers"><img src="https://img.shields.io/github/stars/yourusername/snapdocs?style=flat-square&logo=github&color=yellow" alt="GitHub stars"></a>
     <a href="https://github.com/yourusername/snapdocs/network/members"><img src="https://img.shields.io/github/forks/yourusername/snapdocs?style=flat-square&logo=github" alt="GitHub forks"></a>
     <a href="https://github.com/yourusername/snapdocs/issues"><img src="https://img.shields.io/github/issues/yourusername/snapdocs?style=flat-square&logo=github" alt="GitHub issues"></a>
