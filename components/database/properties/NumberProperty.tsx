@@ -39,7 +39,7 @@ export function NumberProperty({
   const formatNumber = (num: number | null) => {
     if (num === null) return ""
     
-    const format = property.options?.format || 'number'
+    const format = property.options?.numberFormat || 'number'
     const precision = property.options?.precision || 0
     
     switch (format) {

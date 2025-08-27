@@ -28,9 +28,9 @@ export function DatabaseBlock({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const databaseId = block.properties?.databaseId
-  const isFullPage = block.properties?.fullPage
-  const maxRows = block.properties?.maxRows || 10
+  const databaseId = (block.properties as any)?.databaseId
+  const isFullPage = (block.properties as any)?.fullPage
+  const maxRows = (block.properties as any)?.maxRows || 10
 
   useEffect(() => {
     if (databaseId) {

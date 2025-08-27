@@ -64,7 +64,7 @@ export async function PUT(
     }
 
     // Force save the content
-    const savedContent = await pageContentService.forceClientVersion(pageId, blocks)
+    const savedContent = await pageContentService.savePageContent(pageId, blocks, user.id)
 
     // Update page metadata
     await prisma.page.update({

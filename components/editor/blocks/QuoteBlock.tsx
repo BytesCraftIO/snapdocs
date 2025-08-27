@@ -34,7 +34,7 @@ export default function QuoteBlock({
       : ''
   
   // Extract mentions from block properties
-  const mentions = block.properties?.mentions || {}
+  const mentions = (block.properties as any)?.mentions || {}
 
   const handleChange = (newContent: string, newMentions?: any) => {
     // Pass both content and mentions to parent

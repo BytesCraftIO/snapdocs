@@ -49,8 +49,8 @@ export class PageContentService {
       pageId,
       blocks,
       version: pageDocument.version,
-      createdAt: pageDocument.createdAt.toISOString(),
-      updatedAt: pageDocument.updatedAt.toISOString()
+      createdAt: pageDocument.createdAt,
+      updatedAt: pageDocument.updatedAt
     }
   }
 
@@ -71,9 +71,9 @@ export class PageContentService {
         pageId: cleanContent.pageId,
         blocks: cleanContent.blocks || [],
         version: cleanContent.version || 1,
-        createdAt: cleanContent.createdAt ? new Date(cleanContent.createdAt).toISOString() : new Date().toISOString(),
-        updatedAt: cleanContent.updatedAt ? new Date(cleanContent.updatedAt).toISOString() : new Date().toISOString()
-      } as PageContent
+        createdAt: cleanContent.createdAt ? new Date(cleanContent.createdAt) : new Date(),
+        updatedAt: cleanContent.updatedAt ? new Date(cleanContent.updatedAt) : new Date()
+      }
     }
     
     return null
@@ -107,8 +107,8 @@ export class PageContentService {
       pageId: doc.pageId,
       blocks: doc.blocks,
       version: doc.version,
-      createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt.toISOString()
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt
     }))
   }
 

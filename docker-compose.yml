@@ -8,10 +8,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: snapdocs
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,6 +19,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - snapdocs-network
 
   # MongoDB - Document store for page content
   mongodb:
@@ -26,11 +28,11 @@ services:
     container_name: snapdocs-mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
       MONGO_INITDB_DATABASE: snapdocs
     ports:
-      - "27017:27017"
+      - "${MONGODB_PORT:-27017}:27017"
     volumes:
       - mongodb_data:/data/db
       - ./docker/mongodb/init.js:/docker-entrypoint-initdb.d/init.js:ro
@@ -39,35 +41,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # MongoDB Express - Web UI for MongoDB
-  mongo-express:
-    image: mongo-express:latest
-    container_name: snapdocs-mongo-express
-    restart: unless-stopped
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password
-      ME_CONFIG_MONGODB_SERVER: mongodb
-      ME_CONFIG_MONGODB_PORT: 27017
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: admin
-    ports:
-      - "8081:8081"
-    depends_on:
-      mongodb:
-        condition: service_healthy
     networks:
-      - default
+      - snapdocs-network
 
   # Redis - Caching and session management
   redis:
     image: redis:7-alpine
     container_name: snapdocs-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: >
+      sh -c '
+        if [ -n "$${REDIS_PASSWORD}" ]; then
+          redis-server --appendonly yes --requirepass $${REDIS_PASSWORD}
+        else
+          redis-server --appendonly yes
+        fi
+      '
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -75,6 +68,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - snapdocs-network
 
   # MinIO - S3-compatible object storage for files
   minio:
@@ -82,12 +77,12 @@ services:
     container_name: snapdocs-minio
     restart: unless-stopped
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"  # API
-      - "9001:9001"  # Console
+      - "${MINIO_API_PORT:-9000}:9000"      # API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"  # Console
     volumes:
       - minio_data:/data
     healthcheck:
@@ -95,6 +90,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - snapdocs-network
 
   # Create MinIO bucket on startup
   minio-setup:
@@ -103,13 +100,51 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-snapdocs}
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb --ignore-existing myminio/snapdocs;
-      /usr/bin/mc anonymous set public myminio/snapdocs;
+      /usr/bin/mc alias set myminio http://minio:9000 $${S3_ACCESS_KEY} $${S3_SECRET_KEY};
+      /usr/bin/mc mb --ignore-existing myminio/$${S3_BUCKET};
+      /usr/bin/mc anonymous set public myminio/$${S3_BUCKET};
       exit 0;
       "
+    networks:
+      - snapdocs-network
+
+  # Next.js Application (production only)
+  app:
+    image: snapdocs:latest
+    container_name: snapdocs-app
+    restart: unless-stopped
+    profiles: ["production"]
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/snapdocs
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/snapdocs?authSource=admin
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-snapdocs}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-your-secret-key-here-change-in-production}
+      SOCKET_URL: ${SOCKET_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - snapdocs-network
 
 volumes:
   postgres_data:
@@ -122,6 +157,6 @@ volumes:
     driver: local
 
 networks:
-  default:
+  snapdocs-network:
     name: snapdocs-network
     driver: bridge

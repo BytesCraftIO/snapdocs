@@ -1,90 +1,57 @@
-# SnapDocs
+# SnapDocs - Open Source Notion Clone
 
-SnapDocs is a modern collaborative document workspace built with Next.js, PostgreSQL, MongoDB, and shadcn/ui. It provides powerful features for creating, organizing, and collaborating on documents with your team.
+<div align="center">
+  <h3>A modern, open-source collaborative document workspace</h3>
+  <p>Built with Next.js, PostgreSQL, MongoDB, and real-time collaboration</p>
+  
+  <p align="center">
+    <a href="#features">Features</a> •
+    <a href="#demo">Demo</a> •
+    <a href="#quick-start">Quick Start</a> •
+    <a href="#tech-stack">Tech Stack</a> •
+    <a href="#contributing">Contributing</a> •
+    <a href="#license">License</a>
+  </p>
+</div>
 
-## 🚀 Features
+## Overview
 
-### Core Features
-- **Block-based Editor**: Draggable blocks with multiple content types
-- **Rich Text Editing**: Full formatting support with slash commands
-- **Nested Pages**: Infinite page hierarchy with breadcrumb navigation
-- **Database Views**: Table, Board (Kanban), List, Calendar, Gallery views
-- **Real-time Collaboration**: Live cursors and instant updates
-- **Templates**: Page and database templates
+SnapDocs is a feature-rich, open-source alternative to Notion built with modern web technologies. It provides a powerful block-based editor, real-time collaboration, and flexible database views - all while being completely self-hostable and customizable.
+
+## ✨ Features
+
+### Block-Based Editor
+- **Rich Content Blocks**: Text, headings, lists, code blocks, images, and more
+- **Drag & Drop**: Intuitive block reordering and nesting
+- **Slash Commands**: Quick block insertion with `/` menu
+- **Markdown Support**: Write in markdown and see it transform
+- **Nested Pages**: Create infinite hierarchies of documents
+
+### Real-Time Collaboration
+- **Live Cursors**: See where others are working
+- **Instant Updates**: Changes sync across all users immediately
+- **Presence Indicators**: Know who's viewing and editing
+- **Conflict Resolution**: Automatic operational transformation
+
+### Database Views
+- **Table View**: Spreadsheet-like data management
+- **Board View**: Kanban-style project management
+- **Calendar View**: Date-based organization
+- **Gallery View**: Visual card layout
+- **List View**: Simple, clean lists
+
+### Additional Features
+- **Templates**: Reusable page and database templates
 - **Search**: Full-text search across all content
-- **Comments & Mentions**: Inline comments and user mentions
+- **Comments**: Inline comments and discussions
 - **Version History**: Track changes and restore previous versions
-- **Sharing & Permissions**: Granular access control
+- **Permissions**: Granular access control
+- **Dark Mode**: Built-in theme support
 
-### Content Blocks
-- Text (paragraph, headings, lists)
-- Media (images, videos, files)
-- Embeds (code, equations, web bookmarks)
-- Databases (inline and full-page)
-- Toggles and callouts
-- Dividers and columns
-- Table of contents
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type safety
-- **shadcn/ui** - UI components built on Radix UI
-- **Tailwind CSS** - Styling
-- **Lexical** - Rich text editor framework
-- **DnD Kit** - Drag and drop
-- **Socket.io** - Real-time collaboration
-- **React Query** - Data fetching and caching
-
-### Backend
-- **Next.js API Routes** - Backend API
-- **PostgreSQL** - Primary database for structured data
-- **MongoDB** - Document store for page content
-- **Prisma** - ORM for PostgreSQL
-- **Redis** - Caching and session management
-- **MinIO/S3** - File storage
-
-### Authentication & Security
-- **NextAuth.js** - Authentication
-- **JWT** - Token management
-- **bcrypt** - Password hashing
-
-## 📁 Project Structure
-
-```
-snapdocs/
-├── app/                      # Next.js app directory
-│   ├── (auth)/              # Authentication pages
-│   ├── (main)/              # Main application
-│   │   ├── workspace/       # Workspace pages
-│   │   ├── page/           # Page views
-│   │   └── settings/       # Settings pages
-│   ├── api/                # API routes
-│   └── layout.tsx          # Root layout
-├── components/             # React components
-│   ├── editor/            # Editor components
-│   │   ├── blocks/       # Block components
-│   │   ├── toolbar/      # Formatting toolbar
-│   │   └── slash-menu/   # Slash commands
-│   ├── database/         # Database views
-│   ├── ui/              # shadcn/ui components
-│   └── shared/          # Shared components
-├── lib/                  # Utilities and helpers
-│   ├── db/              # Database clients
-│   ├── api/             # API utilities
-│   └── utils/           # Helper functions
-├── hooks/               # Custom React hooks
-├── types/               # TypeScript types
-├── prisma/              # Prisma schema and migrations
-├── public/              # Static assets
-└── docker/              # Docker configurations
-```
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ and npm/yarn/pnpm
+- Node.js 18+
 - Docker and Docker Compose
 - Git
 
@@ -101,43 +68,22 @@ cd snapdocs
 npm install
 ```
 
-3. **Start databases with Docker**
+3. **Start all infrastructure services with one command**
 ```bash
 docker-compose up -d
 ```
+
+This starts PostgreSQL, MongoDB, Redis, and MinIO. All services are configured with default passwords for development.
 
 4. **Set up environment variables**
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your configuration:
-```env
-# Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/snapdocs"
-MONGODB_URI="mongodb://localhost:27017/snapdocs"
-
-# Redis
-REDIS_URL="redis://localhost:6379"
-
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key"
-
-# File Storage (MinIO or S3)
-S3_ENDPOINT="http://localhost:9000"
-S3_ACCESS_KEY="minioadmin"
-S3_SECRET_KEY="minioadmin"
-S3_BUCKET="snapdocs"
-
-# Real-time
-SOCKET_URL="http://localhost:3000"
-```
-
-5. **Run database migrations**
+5. **Initialize the database**
 ```bash
 npm run db:migrate
-npm run db:seed  # Optional: seed with sample data
+npm run db:generate
 ```
 
 6. **Start the development server**
@@ -145,150 +91,250 @@ npm run db:seed  # Optional: seed with sample data
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+Visit `http://localhost:3000` and start building!
+
+## 🛠 Tech Stack
+
+- **Frontend**: Next.js 14, React 19, TypeScript, Tailwind CSS
+- **UI Components**: shadcn/ui (Radix UI), Lucide Icons
+- **Editor**: BlockNote, Lexical, DnD Kit
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Databases**: PostgreSQL (metadata), MongoDB (content)
+- **Real-time**: Socket.io with operational transformation
+- **Authentication**: NextAuth.js
+- **File Storage**: MinIO (S3-compatible)
+- **Caching**: Redis
+- **Development**: Docker Compose, ESLint, Prettier
+
+## 📁 Project Structure
+
+```
+snapdocs/
+├── app/                 # Next.js App Router
+│   ├── api/            # API routes
+│   └── (main)/         # Application pages
+├── components/         # React components
+│   ├── editor/        # Block editor components
+│   ├── database/      # Database view components
+│   └── ui/           # Base UI components
+├── lib/               # Utilities and services
+│   ├── db/           # Database connections
+│   ├── services/     # Business logic
+│   └── socket/       # Real-time collaboration
+├── prisma/            # Database schema
+├── types/             # TypeScript definitions
+└── docker-compose.yml # Local development services
+```
 
 ## 🐳 Docker Setup
 
-The project includes Docker Compose configuration for all required services:
+### Development Mode
+
+Start all infrastructure services with default configurations:
 
 ```bash
-# Start all services
+# Start PostgreSQL, MongoDB, Redis, and MinIO
 docker-compose up -d
+
+# View logs for all services
+docker-compose logs -f
 
 # Stop all services
 docker-compose down
 
-# View logs
-docker-compose logs -f
-
-# Reset everything (including volumes)
+# Reset everything (including data)
 docker-compose down -v
 ```
 
-Services included:
-- PostgreSQL (port 5432)
-- MongoDB (port 27017)
-- Redis (port 6379)
-- MinIO (port 9000/9001)
+**Default Service Ports:**
+- PostgreSQL: `localhost:5432`
+- MongoDB: `localhost:27017`
+- Redis: `localhost:6379`
+- MinIO API: `localhost:9000`
+- MinIO Console: `localhost:9001`
 
-## 📝 Development
+### Production Mode
 
-### Commands
+For production deployment with the Next.js app included:
+
+```bash
+# Create production environment file
+cat > .env.production <<EOF
+POSTGRES_PASSWORD=secure_postgres_pass
+MONGO_ROOT_PASSWORD=secure_mongo_pass
+REDIS_PASSWORD=secure_redis_pass
+S3_ACCESS_KEY=secure_access_key
+S3_SECRET_KEY=secure_secret_key
+NEXTAUTH_SECRET=your_nextauth_secret_here
+EOF
+
+# Build and start everything including the app
+docker-compose --profile production up -d
+
+# This starts:
+# - All infrastructure services
+# - Next.js application (port 3000)
+```
+
+### Environment Configuration
+
+The Docker setup supports environment variables with sensible defaults for development. You can override any value using a `.env` file in the project root.
+
+**Configurable Variables:**
+```env
+# Database Passwords (default: 'password' for dev)
+POSTGRES_PASSWORD=password
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=password
+REDIS_PASSWORD=            # Empty by default (no auth)
+
+# Service Ports
+POSTGRES_PORT=5432
+MONGODB_PORT=27017
+REDIS_PORT=6379
+MINIO_API_PORT=9000
+MINIO_CONSOLE_PORT=9001
+
+# MinIO/S3 Configuration
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET=snapdocs
+
+# Application (production profile only)
+APP_PORT=3000
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key
+```
+
+### Docker Commands Reference
 
 ```bash
 # Development
+docker-compose up -d                     # Start core services
+
+# Production
+docker-compose --profile production up -d # Full stack with app
+
+# Management
+docker-compose ps                        # List running services
+docker-compose logs -f [service]        # View logs
+docker-compose restart [service]        # Restart a service
+docker-compose exec [service] sh        # Shell into container
+
+# Cleanup
+docker-compose down                     # Stop services
+docker-compose down -v                  # Stop and remove volumes
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env.local` file for local development:
+
+```env
+# Database (matches docker-compose defaults)
+DATABASE_URL="postgresql://postgres:password@localhost:5432/snapdocs"
+MONGODB_URI="mongodb://admin:password@localhost:27017/snapdocs?authSource=admin"
+
+# Authentication
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-here"
+
+# Redis
+REDIS_URL="redis://localhost:6379"
+
+# File Storage (MinIO)
+S3_ENDPOINT="http://localhost:9000"
+S3_ACCESS_KEY="minioadmin"
+S3_SECRET_KEY="minioadmin"
+S3_BUCKET="snapdocs"
+```
+
+### Available Scripts
+
+```bash
 npm run dev          # Start development server
 npm run build        # Build for production
 npm run start        # Start production server
-
-# Database
-npm run db:migrate   # Run migrations
-npm run db:push      # Push schema changes
-npm run db:seed      # Seed database
-npm run db:studio    # Open Prisma Studio
-
-# Testing
+npm run lint         # Run ESLint
+npm run typecheck    # TypeScript type checking
+npm run format       # Format with Prettier
 npm run test         # Run tests
-npm run test:watch   # Run tests in watch mode
-npm run test:e2e     # Run E2E tests
 
-# Code Quality
-npm run lint         # Lint code
-npm run lint:fix     # Fix lint issues
-npm run format       # Format code
-npm run typecheck    # Type checking
+# Database commands
+npm run db:migrate   # Run migrations
+npm run db:generate  # Generate Prisma client
+npm run db:studio    # Open Prisma Studio
+npm run db:seed      # Seed sample data
 ```
-
-### shadcn/ui Components
-
-Add new components:
-```bash
-npx shadcn-ui@latest add [component-name]
-```
-
-## 🏗️ Architecture
-
-### Database Design
-
-**PostgreSQL** (Structured Data):
-- Users, workspaces, permissions
-- Page metadata and hierarchy
-- Database schemas and views
-- Comments and activities
-
-**MongoDB** (Document Data):
-- Page content blocks
-- Version history
-- Templates
-
-### Key Design Patterns
-- **Block-based Architecture**: Content as composable blocks
-- **Optimistic UI**: Instant feedback with background sync
-- **Event Sourcing**: For collaboration and history
-- **CQRS**: Separate read/write models for performance
-
-### API Structure
-- RESTful endpoints for CRUD operations
-- WebSocket connections for real-time features
-- GraphQL endpoint for complex queries (optional)
-
-## 🔐 Security
-
-- JWT-based authentication
-- Role-based access control (RBAC)
-- Input validation and sanitization
-- Rate limiting
-- CORS configuration
-- SQL injection prevention via Prisma
-- XSS protection
-
-## 🚢 Deployment
-
-### Vercel (Recommended)
-1. Push to GitHub
-2. Import project in Vercel
-3. Configure environment variables
-4. Deploy
-
-### Docker Production
-```bash
-docker build -t snapdocs .
-docker run -p 3000:3000 snapdocs
-```
-
-### Manual Deployment
-```bash
-npm run build
-npm run start
-```
-
-## 📚 Documentation
-
-- [API Documentation](./docs/api.md)
-- [Database Schema](./docs/database.md)
-- [Component Library](./docs/components.md)
-- [Contributing Guide](./CONTRIBUTING.md)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### How to Contribute
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow the existing code style
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass before submitting PR
+
+## 🗺 Roadmap
+
+- [ ] Mobile applications (iOS/Android)
+- [ ] Offline support with sync
+- [annon formulas and calculations
+- [ ] API for third-party integrations
+- [ ] Plugin system for extensibility
+- [ ] AI-powered writing assistance
+- [ ] Advanced permissions and sharing
+- [ ] Export to various formats (PDF, Markdown, HTML)
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Inspired by Notion's collaborative workspace concept
+- Inspired by [Notion](https://notion.so)
 - Built with [shadcn/ui](https://ui.shadcn.com)
 - Icons from [Lucide](https://lucide.dev)
+- Block editor powered by [BlockNote](https://blocknote.dev)
 
-## 📞 Support
+## 💬 Community
 
-For issues and questions:
-- Open an issue on GitHub
-- Contact: your-email@example.com
+- [GitHub Discussions](https://github.com/yourusername/snapdocs/discussions) - Ask questions and share ideas
+- [Discord Server](https://discord.gg/snapdocs) - Real-time chat with the community
+- [Twitter](https://twitter.com/snapdocs) - Follow for updates
+
+## 🐛 Bug Reports & Feature Requests
+
+Please use the [GitHub Issues](https://github.com/yourusername/snapdocs/issues) to report bugs or request features.
+
+## 🔒 Security
+
+For security issues, please email security@snapdocs.example.com instead of using the issue tracker.
+
+## 📊 Status
+
+![GitHub stars](https://img.shields.io/github/stars/yourusername/snapdocs)
+![GitHub forks](https://img.shields.io/github/forks/yourusername/snapdocs)
+![GitHub issues](https://img.shields.io/github/issues/yourusername/snapdocs)
+![GitHub license](https://img.shields.io/github/license/yourusername/snapdocs)
 
 ---
 
-**Note**: This is an independent project and not affiliated with any other companies.
+<div align="center">
+  Made with ❤️ by the SnapDocs Community
+  
+  <p>If you find this project useful, please consider giving it a ⭐</p>
+</div>

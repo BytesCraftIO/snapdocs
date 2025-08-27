@@ -76,9 +76,22 @@ export default async function PageEditorPage({ params }: PageEditorPageProps) {
     // Get page content from MongoDB
     const pageContent = await pageContentService.loadPageContent(resolvedParams.pageId)
 
+    // Transform page data to match expected types
+    const transformedPage = {
+      ...page,
+      icon: page.icon || undefined,
+      coverImage: page.coverImage || undefined,
+      createdAt: page.createdAt.toISOString(),
+      updatedAt: page.updatedAt.toISOString(),
+      parent: page.parent ? {
+        ...page.parent,
+        icon: undefined
+      } : undefined
+    }
+
     return (
       <PageEditorV2 
-        page={page}
+        page={transformedPage}
         initialContent={pageContent}
         user={user}
       />

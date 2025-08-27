@@ -110,7 +110,7 @@ export function SettingsModal({ open, onOpenChange, user, workspaceId }: Setting
 
   const handleSaveNotifications = () => {
     // Save notification preferences - coming soon
-    toast.info('Notification settings will be available soon!')
+    toast('Notification settings will be available soon!')
   }
   
   const handleChangePassword = async () => {

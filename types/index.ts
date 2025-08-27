@@ -383,7 +383,6 @@ export interface PageTreeNode extends Page {
   children: PageTreeNode[]
   depth: number
   hasChildren: boolean
-  isFavorite?: boolean
 }
 
 export interface PageTreeMeta {

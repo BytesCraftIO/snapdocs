@@ -64,9 +64,7 @@ export async function POST(
         id: generateId(),
         databaseId: resolvedParams.databaseId,
         properties: properties || {},
-        order: nextOrder,
-        createdBy: session.user.id,
-        lastEditedBy: session.user.id
+        order: nextOrder
       }
     })
 

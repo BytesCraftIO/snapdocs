@@ -168,7 +168,7 @@ export default function BlockV2({
     
     // Get cursor position for navigation and backspace handling
     const selection = window.getSelection()
-    const cursorAtStart = selection?.rangeCount > 0 && 
+    const cursorAtStart = selection && selection.rangeCount && selection.rangeCount > 0 && 
                          selection.getRangeAt(0).startOffset === 0 && 
                          selection.getRangeAt(0).endOffset === 0
     

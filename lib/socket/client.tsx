@@ -2,7 +2,17 @@
 
 import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from 'react'
 import io, { Socket } from 'socket.io-client'
-import { UserPresence } from './server'
+
+interface UserPresence {
+  userId: string
+  userName: string
+  userColor: string
+  name?: string
+  email?: string
+  color?: string
+  pageId?: string
+  blockId?: string | null
+}
 
 interface SocketContextType {
   socket: Socket | null

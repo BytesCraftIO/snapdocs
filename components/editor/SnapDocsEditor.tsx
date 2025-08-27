@@ -67,7 +67,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       })
       return { ...state, blocks: movedBlocks }
     case 'SELECT_BLOCK':
-      return { ...state, selectedBlockId: action.payload }
+      return { ...state, selectedBlockId: action.payload || undefined }
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload }
     default:
@@ -108,7 +108,7 @@ export default function SnapDocsEditor({
   } = useSocket()
   const [editorState, dispatch] = useReducer(editorReducer, {
     blocks: initialBlocks,
-    selectedBlockId: null,
+    selectedBlockId: undefined,
     isLoading: false,
     lastSaved: undefined
   })
@@ -119,7 +119,7 @@ export default function SnapDocsEditor({
   const [draggedBlock, setDraggedBlock] = useState<BlockType | null>(null)
   const [blockUsers, setBlockUsers] = useState<Map<string, { userId: string; userName: string; userColor: string }>>(new Map())
   const editorRef = useRef<HTMLDivElement>(null)
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>()
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const { blocks } = editorState
   const previousBlocksRef = useRef<BlockType[]>(initialBlocks)

@@ -396,7 +396,7 @@ export default function MentionInput({
         const range = document.createRange()
         
         // Calculate where to place cursor in the rendered content
-        const targetPosition = beforeMention.length + user.name.length + 2 // +2 for @ and space
+        const targetPosition = beforeMention.length + (user.name?.length || 0) + 2 // +2 for @ and space
         
         let currentPos = 0
         let targetNode: Node | null = null
@@ -439,8 +439,8 @@ export default function MentionInput({
         
         if (targetNode) {
           try {
-            if (targetNode.nodeType === Node.TEXT_NODE) {
-              range.setStart(targetNode, Math.min(targetOffset, targetNode.textContent?.length || 0))
+            if ((targetNode as any).nodeType === Node.TEXT_NODE) {
+              range.setStart(targetNode, Math.min(targetOffset, (targetNode as Text).textContent?.length || 0))
             } else {
               range.setStartAfter(targetNode)
             }

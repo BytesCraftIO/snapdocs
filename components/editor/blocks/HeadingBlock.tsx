@@ -35,7 +35,7 @@ export default function HeadingBlock({
       : ''
   
   // Extract mentions from block properties
-  const mentions = block.properties?.mentions || {}
+  const mentions = (block.properties as any)?.mentions || {}
 
   const getHeadingStyles = () => {
     switch (block.type) {

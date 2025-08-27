@@ -50,7 +50,7 @@ export default function BlockNoteEditorComponent({
 }: BlockNoteEditorProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [blockPresence, setBlockPresence] = useState<Map<string, { userId: string; userName: string; userColor: string }>>(new Map())
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>()
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const previousBlocksRef = useRef<AppBlockType[]>(initialBlocks)
   const isProcessingRemoteUpdate = useRef(false)
   const lastSyncedContent = useRef<string>('')
@@ -89,7 +89,7 @@ export default function BlockNoteEditorComponent({
       id: block.id,
       type: block.type || 'paragraph',
       content: block.content || '',
-      props: block.props || {},
+      props: (block as any).props || block.properties || {},
       children: block.children || []
     }))
   }
@@ -117,13 +117,13 @@ export default function BlockNoteEditorComponent({
     return blocks.map((block, index) => ({
       id: block.id,
       type: block.type as any,
-      content: block.content || '',
-      props: block.props,
-      children: block.children as any,
+      content: block.content as any || '',
+      properties: block.props || {},
+      children: block.children as any || [],
       order: index,
       createdAt: new Date(),
       updatedAt: new Date()
-    }))
+    })) as AppBlockType[]
   }
 
   // Join the page room on mount
@@ -155,7 +155,7 @@ export default function BlockNoteEditorComponent({
     if (!isConnected || !onContentSync || !onBlockUpdate || !onBlockFocus || !onBlockBlur || !onUserLeft) return
 
     // Listen for full content sync from other users
-    const unsubscribeContentSync = onContentSync((data: any) => {
+    onContentSync((data: any) => {
       // Don't process our own updates
       if (data.userId === userId) return
       
@@ -179,7 +179,7 @@ export default function BlockNoteEditorComponent({
     })
 
     // Listen for individual block updates
-    const unsubscribeBlockUpdate = onBlockUpdate((data: any) => {
+    onBlockUpdate((data: any) => {
       // Don't process our own updates
       if (data.userId === userId) return
       
@@ -206,7 +206,7 @@ export default function BlockNoteEditorComponent({
     })
     
     // Listen for block focus events from other users
-    const unsubscribeBlockFocus = onBlockFocus((data: any) => {
+    onBlockFocus((data: any) => {
       // Don't process our own focus events
       if (data.userId === userId) return
       
@@ -222,7 +222,7 @@ export default function BlockNoteEditorComponent({
     })
     
     // Listen for block blur events from other users
-    const unsubscribeBlockBlur = onBlockBlur((data: any) => {
+    onBlockBlur((data: any) => {
       // Don't process our own blur events
       if (data.userId === userId) return
       
@@ -238,7 +238,7 @@ export default function BlockNoteEditorComponent({
     })
     
     // Listen for user left events
-    const unsubscribeUserLeft = onUserLeft((data: any) => {
+    onUserLeft((data: any) => {
       if (data.userId === userId) return
       
       // Remove all presence for the user who left
@@ -253,14 +253,7 @@ export default function BlockNoteEditorComponent({
       })
     })
 
-    // Cleanup
-    return () => {
-      if (unsubscribeContentSync) unsubscribeContentSync()
-      if (unsubscribeBlockUpdate) unsubscribeBlockUpdate()
-      if (unsubscribeBlockFocus) unsubscribeBlockFocus()
-      if (unsubscribeBlockBlur) unsubscribeBlockBlur()
-      if (unsubscribeUserLeft) unsubscribeUserLeft()
-    }
+    // No cleanup needed as socket listeners are managed by the socket provider
   }, [isConnected, onContentSync, onBlockUpdate, onBlockFocus, onBlockBlur, onUserLeft, userId, pageId, editor, convertToBlockNoteFormat])
 
   // Auto-save functionality
