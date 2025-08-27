@@ -7,6 +7,11 @@ on:
       - master
     tags:
       - 'v*.*.*'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
+      - '!.github/workflows/docker-publish.yml'
   pull_request:
     branches:
       - main
@@ -17,6 +22,11 @@ on:
         description: 'Docker image tag'
         required: false
         default: 'latest'
+      update_readme:
+        description: 'Update Docker Hub README'
+        required: false
+        type: boolean
+        default: true
 
 env:
   DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/snapdocs
@@ -68,12 +78,23 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  update-docker-hub-description:
+    name: Update Docker Hub Description
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: |
+      github.event_name != 'pull_request' && 
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event.inputs.update_readme == 'true')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Update Docker Hub Description
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/snapdocs
+          repository: ${{ env.DOCKERHUB_IMAGE }}
           readme-filepath: ./README.md
-          short-description: 'SnapDocs - Open source collaborative document workspace'
+          short-description: 'SnapDocs - Open source, self-hostable document workspace with real-time collaboration'
