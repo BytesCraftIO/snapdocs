@@ -34,6 +34,7 @@ interface SocketContextType {
   onSelectionChange?: (callback: (data: any) => void) => void
   onUserTyping?: (callback: (data: any) => void) => void
   onMentionNotification?: (callback: (data: any) => void) => void
+  onUserLeft?: (callback: (data: any) => void) => void
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -66,6 +67,7 @@ const SocketContext = createContext<SocketContextType>({
   onSelectionChange: () => {},
   onUserTyping: () => {},
   onMentionNotification: () => {},
+  onUserLeft: () => {},
 })
 
 export function SocketProvider({ children }: { children: ReactNode }) {
@@ -388,6 +390,16 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [socket])
+  
+  // Register user left listener
+  const onUserLeft = useCallback((callback: (data: any) => void) => {
+    if (socket) {
+      socket.on('user-left', callback)
+      return () => {
+        socket.off('user-left', callback)
+      }
+    }
+  }, [socket])
 
   return (
     <SocketContext.Provider value={{
@@ -419,7 +431,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       onCursorMove,
       onSelectionChange,
       onUserTyping,
-      onMentionNotification
+      onMentionNotification,
+      onUserLeft
     }}>
       {children}
     </SocketContext.Provider>

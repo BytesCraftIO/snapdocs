@@ -329,6 +329,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
               showSaveStatus={false}
               autoSaveInterval={2000}
               userId={user?.id}
+              user={user}
             />
           </div>
         </div>

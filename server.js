@@ -31,13 +31,15 @@ app.prepare().then(() => {
     }
   })
 
-  // Simple page-based user tracking
+  // Enhanced user presence tracking
   const pageRooms = new Map() // roomId -> Map(userId -> userInfo)
+  const userPresence = new Map() // userId -> Map(pageId -> { blockId, color, ... })
   const userColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#A8E6CF', '#FFD3B6', '#FFAAA5']
   
   io.on('connection', (socket) => {
     let currentRoom = null
     let currentUserId = null
+    let currentPageId = null
 
     socket.on('join-page', (data) => {
       const { pageId, workspaceId, user } = data
@@ -65,10 +67,16 @@ app.prepare().then(() => {
       socket.join(roomId)
       currentRoom = roomId
       currentUserId = user.id
+      currentPageId = pageId
 
       // Initialize room if needed
       if (!pageRooms.has(roomId)) {
         pageRooms.set(roomId, new Map())
+      }
+
+      // Initialize user presence tracking
+      if (!userPresence.has(user.id)) {
+        userPresence.set(user.id, new Map())
       }
 
       // Add user to room
@@ -78,12 +86,26 @@ app.prepare().then(() => {
         name: user.name || 'Anonymous',
         email: user.email || '',
         color: userColors[Math.floor(Math.random() * userColors.length)],
-        socketId: socket.id
+        socketId: socket.id,
+        currentBlockId: null, // Track which block the user is editing
+        pageId: pageId
       }
       room.set(user.id, userInfo)
+      
+      // Update user presence for this page
+      const userPages = userPresence.get(user.id)
+      userPages.set(pageId, {
+        blockId: null,
+        color: userInfo.color,
+        name: userInfo.name,
+        socketId: socket.id
+      })
 
-      // Get all users in this room
-      const allUsers = Array.from(room.values())
+      // Get all users in this room with their current block info
+      const allUsers = Array.from(room.values()).map(u => ({
+        ...u,
+        currentBlockId: u.currentBlockId || null
+      }))
       
       // Send list of other users to the joining user (excluding themselves)
       const otherUsers = allUsers.filter(u => u.userId !== user.id)
@@ -157,32 +179,67 @@ app.prepare().then(() => {
     
     // Handle block focus (user starts editing a block)
     socket.on('block-focus', (data) => {
-      if (!currentRoom) return
+      if (!currentRoom || !currentUserId || !currentPageId) return
       
       const room = pageRooms.get(currentRoom)
-      if (room && room.size > 1) {
-        const userInfo = room.get(data.userId)
-        socket.to(currentRoom).emit('block-focused', {
-          blockId: data.blockId,
-          userId: data.userId,
-          userName: userInfo?.name || 'Anonymous',
-          userColor: userInfo?.color || '#4ECDC4',
-          timestamp: new Date().toISOString()
-        })
+      if (room) {
+        const userInfo = room.get(currentUserId)
+        if (userInfo) {
+          // Update user's current block in room
+          userInfo.currentBlockId = data.blockId
+          room.set(currentUserId, userInfo)
+          
+          // Update user presence
+          const userPages = userPresence.get(currentUserId)
+          if (userPages) {
+            const pagePresence = userPages.get(currentPageId)
+            if (pagePresence) {
+              pagePresence.blockId = data.blockId
+              userPages.set(currentPageId, pagePresence)
+            }
+          }
+          
+          // Broadcast to others in the room
+          socket.to(currentRoom).emit('block-focused', {
+            blockId: data.blockId,
+            userId: currentUserId,
+            userName: userInfo.name,
+            userColor: userInfo.color,
+            timestamp: new Date().toISOString()
+          })
+        }
       }
     })
     
     // Handle block blur (user stops editing a block)
     socket.on('block-blur', (data) => {
-      if (!currentRoom) return
+      if (!currentRoom || !currentUserId || !currentPageId) return
       
       const room = pageRooms.get(currentRoom)
-      if (room && room.size > 1) {
-        socket.to(currentRoom).emit('block-blurred', {
-          blockId: data.blockId,
-          userId: data.userId,
-          timestamp: new Date().toISOString()
-        })
+      if (room) {
+        const userInfo = room.get(currentUserId)
+        if (userInfo) {
+          // Clear user's current block
+          userInfo.currentBlockId = null
+          room.set(currentUserId, userInfo)
+          
+          // Update user presence
+          const userPages = userPresence.get(currentUserId)
+          if (userPages) {
+            const pagePresence = userPages.get(currentPageId)
+            if (pagePresence) {
+              pagePresence.blockId = null
+              userPages.set(currentPageId, pagePresence)
+            }
+          }
+          
+          // Broadcast to others in the room
+          socket.to(currentRoom).emit('block-blurred', {
+            blockId: data.blockId,
+            userId: currentUserId,
+            timestamp: new Date().toISOString()
+          })
+        }
       }
     })
     
@@ -298,7 +355,30 @@ app.prepare().then(() => {
       if (currentRoom && currentUserId) {
         const room = pageRooms.get(currentRoom)
         if (room) {
+          const userInfo = room.get(currentUserId)
+          
+          // If user was editing a block, notify others that block is no longer being edited
+          if (userInfo && userInfo.currentBlockId) {
+            socket.to(currentRoom).emit('block-blurred', {
+              blockId: userInfo.currentBlockId,
+              userId: currentUserId,
+              timestamp: new Date().toISOString()
+            })
+          }
+          
           room.delete(currentUserId)
+          
+          // Clean up user presence for this page
+          if (currentPageId) {
+            const userPages = userPresence.get(currentUserId)
+            if (userPages) {
+              userPages.delete(currentPageId)
+              // If user has no more pages, remove from presence map
+              if (userPages.size === 0) {
+                userPresence.delete(currentUserId)
+              }
+            }
+          }
           
           // Notify others in the room that someone left
           socket.to(currentRoom).emit('user-left', {
