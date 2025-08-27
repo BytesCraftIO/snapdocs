@@ -1,0 +1,311 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  workspaces    WorkspaceMember[]
+  pages         Page[]
+  comments      Comment[]
+  activities    Activity[]
+  permissions   Permission[]
+  notifications Notification[]     @relation("NotificationRecipient")
+  mentions      Notification[]     @relation("NotificationMentionedBy")
+  
+  @@index([email])
+}
+
+// Workspace model
+model Workspace {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  icon          String?
+  domain        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  members       WorkspaceMember[]
+  pages         Page[]
+  databases     Database[]
+  notifications Notification[]
+  
+  @@index([slug])
+}
+
+// Workspace membership
+model WorkspaceMember {
+  id            String    @id @default(cuid())
+  role          Role      @default(MEMBER)
+  joinedAt      DateTime  @default(now())
+  
+  // Relations
+  userId        String
+  workspaceId   String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+// Page model (metadata only, content in MongoDB)
+model Page {
+  id            String    @id @default(cuid())
+  title         String
+  icon          String?
+  coverImage    String?
+  isPublished   Boolean   @default(false)
+  isArchived    Boolean   @default(false)
+  isDeleted     Boolean   @default(false)
+  isFavorite    Boolean   @default(false)
+  path          String    // Hierarchical path for nested pages
+  order         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  publishedAt   DateTime?
+  deletedAt     DateTime?
+  
+  // Relations
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  parentId      String?
+  parent        Page?     @relation("PageToPage", fields: [parentId], references: [id])
+  children      Page[]    @relation("PageToPage")
+  
+  comments      Comment[]
+  activities    Activity[]
+  permissions   Permission[]
+  databases     Database[]
+  notifications Notification[]
+  
+  @@index([workspaceId])
+  @@index([authorId])
+  @@index([parentId])
+  @@index([path])
+  @@index([isPublished, isArchived, isDeleted])
+}
+
+// Database model (snapdocs database)
+model Database {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  viewType      ViewType  @default(TABLE)
+  properties    Json      // Database schema/properties
+  filters       Json?     // Saved filters
+  sorts         Json?     // Saved sorts
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  pageId        String?
+  page          Page?     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  
+  rows          DatabaseRow[]
+  views         DatabaseView[]
+  
+  @@index([workspaceId])
+  @@index([pageId])
+}
+
+// Database views
+model DatabaseView {
+  id            String    @id @default(cuid())
+  name          String
+  type          ViewType
+  config        Json      // View-specific configuration
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  databaseId    String
+  database      Database  @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  
+  @@index([databaseId])
+}
+
+// Database rows
+model DatabaseRow {
+  id            String    @id @default(cuid())
+  properties    Json      // Row data matching database properties
+  order         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  databaseId    String
+  database      Database  @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  
+  @@index([databaseId])
+}
+
+// Comments
+model Comment {
+  id            String    @id @default(cuid())
+  content       String
+  resolved      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  pageId        String
+  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  parentId      String?
+  parent        Comment?  @relation("CommentToComment", fields: [parentId], references: [id])
+  replies       Comment[] @relation("CommentToComment")
+  
+  @@index([pageId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+// Activity log
+model Activity {
+  id            String       @id @default(cuid())
+  type          ActivityType
+  description   String
+  metadata      Json?
+  createdAt     DateTime     @default(now())
+  
+  // Relations
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  pageId        String?
+  page          Page?        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([pageId])
+  @@index([createdAt])
+}
+
+// Permissions
+model Permission {
+  id            String          @id @default(cuid())
+  type          PermissionType
+  level         PermissionLevel
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relations
+  userId        String?
+  user          User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pageId        String
+  page          Page            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, pageId])
+  @@index([userId])
+  @@index([pageId])
+}
+
+// Notification model
+model Notification {
+  id            String           @id @default(cuid())
+  type          NotificationType
+  title         String
+  message       String
+  read          Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  // The user who receives the notification
+  recipientId   String
+  recipient     User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  // The user who triggered the notification (e.g., mentioned someone)
+  mentionedById String?
+  mentionedBy   User?            @relation("NotificationMentionedBy", fields: [mentionedById], references: [id], onDelete: SetNull)
+  
+  // Related entities
+  pageId        String?
+  page          Page?            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  
+  workspaceId   String?
+  workspace     Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Additional metadata (e.g., block ID where mention happened)
+  metadata      Json?
+  
+  @@index([recipientId, read])
+  @@index([createdAt])
+  @@index([pageId])
+  @@index([workspaceId])
+}
+
+// Enums
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+enum ViewType {
+  TABLE
+  BOARD
+  LIST
+  CALENDAR
+  GALLERY
+  TIMELINE
+}
+
+enum ActivityType {
+  PAGE_CREATED
+  PAGE_UPDATED
+  PAGE_DELETED
+  PAGE_RESTORED
+  PAGE_PUBLISHED
+  PAGE_UNPUBLISHED
+  COMMENT_ADDED
+  COMMENT_RESOLVED
+  MEMBER_JOINED
+  MEMBER_LEFT
+  PERMISSION_CHANGED
+}
+
+enum PermissionType {
+  PUBLIC
+  PRIVATE
+  SHARED
+}
+
+enum PermissionLevel {
+  VIEW
+  COMMENT
+  EDIT
+  FULL_ACCESS
+}
+
+enum NotificationType {
+  MENTION
+  PAGE_SHARED
+  COMMENT_REPLY
+  PAGE_UPDATED
+  WORKSPACE_INVITE
+}

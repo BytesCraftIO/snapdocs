@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-600;
+  }
+}
+
+/* Z-index system */
+@layer utilities {
+  .z-backdrop {
+    z-index: 10;
+  }
+  .z-sidebar {
+    z-index: 40;
+  }
+  .z-sidebar-toggle {
+    z-index: 45;
+  }
+  .z-modal {
+    z-index: 50;
+  }
+  .z-tooltip {
+    z-index: 60;
+  }
+  .z-toast {
+    z-index: 70;
+  }
+}
+
+/* Layout utilities */
+@layer utilities {
+  .sidebar-width {
+    width: 320px;
+  }
+  
+  .main-content-padding {
+    padding-left: 0;
+  }
+  
+  @screen md {
+    .main-content-padding-open {
+      padding-left: 320px;
+    }
+  }
+}
+
+/* Editor styles */
+.snapdocs-editor {
+  @apply min-h-full;
+}
+
+.snapdocs-editor-container {
+  @apply relative min-h-full;
+}
+
+/* BlockV2 System - Clean hover area and handle positioning */
+.block-wrapper {
+  @apply relative;
+}
+
+/* Extend hover area to include the handle space */
+.block-wrapper::before {
+  content: '';
+  position: absolute;
+  left: -3rem; /* Mobile: 48px for handles */
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .block-wrapper::before {
+    left: -4rem; /* Desktop: 64px for handles */
+  }
+}
+
+/* Block content area - properly centered */
+.block-content {
+  @apply relative;
+  /* Ensure content doesn't shift when handles appear */
+  margin-left: 0;
+}
+
+/* Handle positioning with negative margins - doesn't affect content flow */
+.block-wrapper .absolute.-left-12 {
+  /* Mobile handle position */
+  left: -3rem;
+}
+
+@media (min-width: 768px) {
+  .block-wrapper .absolute.-left-16 {
+    /* Desktop handle position */
+    left: -4rem;
+  }
+}
+
+/* Responsive typography */
+@layer utilities {
+  .page-title {
+    @apply text-3xl font-bold;
+  }
+  
+  @screen sm {
+    .page-title {
+      @apply text-4xl;
+    }
+  }
+}
