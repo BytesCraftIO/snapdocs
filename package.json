@@ -63,7 +63,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "ioredis": "^5.7.0",
-    "lexical": "^0.21.0",
+    "lexical": "^0.34.0",
     "lucide-react": "^0.460.0",
     "mongodb": "^6.11.0",
     "next": "^15.1.0",
