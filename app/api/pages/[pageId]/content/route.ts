@@ -134,7 +134,7 @@ export async function PUT(
     }
 
     // Save content immediately (optimized for real-time collaboration)
-    const savedContent = await pageContentService.savePageContent(pageId, blocks)
+    const savedContent = await pageContentService.savePageContent(pageId, blocks, user.id)
 
     // Update page metadata in PostgreSQL
     await prisma.page.update({

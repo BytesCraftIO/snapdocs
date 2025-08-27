@@ -36,16 +36,13 @@ app.prepare().then(() => {
   const userColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#A8E6CF', '#FFD3B6', '#FFAAA5']
   
   io.on('connection', (socket) => {
-    console.log('✅ Socket connected:', socket.id)
     let currentRoom = null
     let currentUserId = null
 
     socket.on('join-page', (data) => {
-      console.log('📄 Join page request:', data)
       const { pageId, workspaceId, user } = data
       
       if (!pageId || !user?.id) {
-        console.log('❌ Invalid join request - missing pageId or user.id')
         return
       }
 
@@ -61,7 +58,6 @@ app.prepare().then(() => {
           socket.to(currentRoom).emit('user-left', {
             userId: currentUserId
           })
-          console.log(`👋 User ${currentUserId} left room ${currentRoom}`)
         }
       }
 
@@ -97,8 +93,6 @@ app.prepare().then(() => {
       socket.to(roomId).emit('user-joined', {
         user: userInfo
       })
-      
-      console.log(`✅ User ${user.name} (${user.id}) joined room ${roomId}. Total users: ${room.size}`)
     })
 
     // Handle individual block updates (real-time)
@@ -273,7 +267,6 @@ app.prepare().then(() => {
             mentionedBy,
             timestamp: new Date().toISOString()
           })
-          console.log(`📢 Sent mention notification to ${mentionedUserId}`)
           break
         }
       }
@@ -281,12 +274,18 @@ app.prepare().then(() => {
     
     // Handle full content sync (periodic)
     socket.on('content-sync', (data) => {
-      if (!currentRoom) return
+      if (!currentRoom) {
+        return
+      }
       
       const room = pageRooms.get(currentRoom)
-      if (room && room.size > 1) {
-        console.log(`🔄 Syncing content in ${currentRoom}`)
+      if (!room) {
+        return
+      }
+      
+      if (room.size > 1) {
         socket.to(currentRoom).emit('content-synced', {
+          pageId: data.pageId,
           blocks: data.blocks,
           userId: data.userId,
           timestamp: new Date().toISOString()
@@ -296,8 +295,6 @@ app.prepare().then(() => {
 
     // Handle disconnect
     socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected:', socket.id)
-      
       if (currentRoom && currentUserId) {
         const room = pageRooms.get(currentRoom)
         if (room) {
@@ -308,12 +305,9 @@ app.prepare().then(() => {
             userId: currentUserId
           })
           
-          console.log(`👋 User ${currentUserId} disconnected from ${currentRoom}. Remaining: ${room.size}`)
-          
           // Clean up empty rooms
           if (room.size === 0) {
             pageRooms.delete(currentRoom)
-            console.log(`🧹 Cleaned up empty room ${currentRoom}`)
           }
         }
       }
@@ -323,6 +317,5 @@ app.prepare().then(() => {
   server.listen(port, (err) => {
     if (err) throw err
     console.log(`> Ready on http://${hostname}:${port}`)
-    console.log('> Socket.io server running')
   })
 })
