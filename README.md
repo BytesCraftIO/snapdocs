@@ -18,7 +18,7 @@
     <a href="https://github.com/BytesCraftIO/snapdocs/network/members"><img src="https://img.shields.io/github/forks/BytesCraftIO/snapdocs?style=flat-square&logo=github" alt="GitHub forks"></a>
     <a href="https://github.com/BytesCraftIO/snapdocs/issues"><img src="https://img.shields.io/github/issues/BytesCraftIO/snapdocs?style=flat-square&logo=github" alt="GitHub issues"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/BytesCraftIO/snapdocs?style=flat-square" alt="License"></a>
-    <a href="https://hub.docker.com/r/BytesCraftIO/snapdocs"><img src="https://img.shields.io/docker/pulls/BytesCraftIO/snapdocs?style=flat-square&logo=docker" alt="Docker Pulls"></a>
+    <a href="https://hub.docker.com/r/BytesCraftIO/snapdocs"><img src="https://img.shields.io/docker/pulls/bytescraftio/snapdocs?style=flat-square&logo=docker" alt="Docker Pulls"></a>
   </p>
   
   <p>
