@@ -173,7 +173,7 @@ pnpm dev
         <br>Docker
       </td>
       <td align="center" width="96">
-        <img src="https://raw.githubusercontent.com/danielcranney/readme-generator/main/public/icons/skills/socketio-colored.svg" width="48" height="48" alt="Socket.io" />
+        <img src="" width="48" height="48" alt="Socket.io" />
         <br>Socket.io
       </td>
       <td align="center" width="96">
@@ -181,7 +181,7 @@ pnpm dev
         <br>shadcn/ui
       </td>
       <td align="center" width="96">
-        <img src="https://avatars.githubusercontent.com/u/74385?s=48&v=4" width="48" height="48" alt="MinIO" />
+        <img src="" width="48" height="48" alt="MinIO" />
         <br>MinIO S3
       </td>
     </tr>
