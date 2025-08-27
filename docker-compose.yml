@@ -116,7 +116,7 @@ services:
 
   # Next.js Application (production only)
   app:
-    image: snapdocs:latest
+    image: bytescraftio/snapdocs:latest
     container_name: snapdocs-app
     restart: unless-stopped
     profiles: ["production"]

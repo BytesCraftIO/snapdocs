@@ -96,8 +96,8 @@ Get SnapDocs running in under 5 minutes!
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/snapdocs.git
-cd snapdocs
+mkdir snapdocs && cd snapdocs
+curl https://raw.githubusercontent.com/BytesCraftIO/snapdocs/refs/heads/main/docker-compose.yml -o docker-compose.yml
 
 # Start all services with one command
 docker-compose --profile production up -d
@@ -111,7 +111,7 @@ That's it! SnapDocs is now running with all required services.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/snapdocs.git
+git clone https://github.com/BytesCraftIO/snapdocs.git
 cd snapdocs
 
 # Install dependencies
@@ -238,7 +238,7 @@ S3_SECRET_KEY=custom_minio_secret
 Pull the pre-built image:
 
 ```bash
-docker pull yourusername/snapdocs:latest
+docker pull bytescraftio/snapdocs:latest
 ```
 
 ## 🤝 Contributing
