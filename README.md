@@ -1,4 +1,4 @@
-# 📝 SnapDocs
+# 📝 SnapDocs - A Modern, Open-Source Document Workspace
 
 <div align="center">
   <img src="screenshots/pages.png" alt="SnapDocs Editor" width="100%" />
