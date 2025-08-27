@@ -342,6 +342,30 @@ export default function BlockNoteEditorComponent({
         editable={!readOnly}
         theme="light"
       />
+      
+      {/* Custom styles to align content with title */}
+      <style jsx global>{`
+        .bn-container .bn-editor {
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+        }
+        
+        .bn-container .bn-block-outer {
+          margin-left: -52px !important;
+        }
+        
+        .bn-container .bn-block-content {
+          margin-left: 52px !important;
+        }
+        
+        .bn-container .bn-drag-handle-menu {
+          left: 0 !important;
+        }
+        
+        .bn-container .bn-block-side-menu {
+          left: 28px !important;
+        }
+      `}</style>
     </div>
   )
 }
