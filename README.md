@@ -14,11 +14,11 @@
   </p>
   
   <p>
-    <a href="https://github.com/yourusername/snapdocs/stargazers"><img src="https://img.shields.io/github/stars/yourusername/snapdocs?style=flat-square&logo=github&color=yellow" alt="GitHub stars"></a>
-    <a href="https://github.com/yourusername/snapdocs/network/members"><img src="https://img.shields.io/github/forks/yourusername/snapdocs?style=flat-square&logo=github" alt="GitHub forks"></a>
-    <a href="https://github.com/yourusername/snapdocs/issues"><img src="https://img.shields.io/github/issues/yourusername/snapdocs?style=flat-square&logo=github" alt="GitHub issues"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/yourusername/snapdocs?style=flat-square" alt="License"></a>
-    <a href="https://hub.docker.com/r/yourusername/snapdocs"><img src="https://img.shields.io/docker/pulls/yourusername/snapdocs?style=flat-square&logo=docker" alt="Docker Pulls"></a>
+    <a href="https://github.com/BytesCraftIO/snapdocs/stargazers"><img src="https://img.shields.io/github/stars/BytesCraftIO/snapdocs?style=flat-square&logo=github&color=yellow" alt="GitHub stars"></a>
+    <a href="https://github.com/BytesCraftIO/snapdocs/network/members"><img src="https://img.shields.io/github/forks/BytesCraftIO/snapdocs?style=flat-square&logo=github" alt="GitHub forks"></a>
+    <a href="https://github.com/BytesCraftIO/snapdocs/issues"><img src="https://img.shields.io/github/issues/BytesCraftIO/snapdocs?style=flat-square&logo=github" alt="GitHub issues"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/BytesCraftIO/snapdocs?style=flat-square" alt="License"></a>
+    <a href="https://hub.docker.com/r/BytesCraftIO/snapdocs"><img src="https://img.shields.io/docker/pulls/BytesCraftIO/snapdocs?style=flat-square&logo=docker" alt="Docker Pulls"></a>
   </p>
   
   <p>
@@ -317,10 +317,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 💬 Community & Support
 
-- 🐛 [Report Issues](https://github.com/yourusername/snapdocs/issues)
-- 💡 [Request Features](https://github.com/yourusername/snapdocs/discussions)
-- 📖 [Documentation](https://github.com/yourusername/snapdocs/wiki)
-- 🌟 [Star on GitHub](https://github.com/yourusername/snapdocs)
+- 🐛 [Report Issues](https://github.com/BytesCraftIO/snapdocs/issues)
+- 💡 [Request Features](https://github.com/BytesCraftIO/snapdocs/discussions)
+- 📖 [Documentation](https://github.com/BytesCraftIO/snapdocs/wiki)
+- 🌟 [Star on GitHub](https://github.com/BytesCraftIO/snapdocs)
 
 ---
 
@@ -329,7 +329,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   
   <p>If you find SnapDocs useful, please consider giving it a ⭐ on GitHub!</p>
   
-  <a href="https://github.com/yourusername/snapdocs/stargazers">
-    <img src="https://img.shields.io/github/stars/yourusername/snapdocs?style=social" alt="Star on GitHub">
+  <a href="https://github.com/BytesCraftIO/snapdocs/stargazers">
+    <img src="https://img.shields.io/github/stars/BytesCraftIO/snapdocs?style=social" alt="Star on GitHub">
   </a>
 </div>
