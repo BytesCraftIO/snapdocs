@@ -1,6 +1,6 @@
 # Multi-stage Docker build for Next.js application with Socket.io
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 # Install dependencies
 RUN apk add --no-cache libc6-compat openssl
 
@@ -22,7 +22,7 @@ RUN \
 RUN npx prisma generate
 
 # Stage 2: Builder
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 RUN apk add --no-cache openssl
 
 WORKDIR /app
@@ -41,7 +41,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Stage 3: Runner
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 # Install required runtime dependencies
 RUN apk add --no-cache openssl
 
