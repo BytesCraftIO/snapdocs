@@ -73,6 +73,22 @@ export default async function PageEditorPage({ params }: PageEditorPageProps) {
       notFound()
     }
 
+    // Get all workspace members for mentions
+    const workspaceMembers = await prisma.workspaceMember.findMany({
+      where: {
+        workspaceId: resolvedParams.workspaceId
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    })
+
     // Get page content from MongoDB
     const pageContent = await pageContentService.loadPageContent(resolvedParams.pageId)
 
@@ -94,6 +110,7 @@ export default async function PageEditorPage({ params }: PageEditorPageProps) {
         page={transformedPage}
         initialContent={pageContent}
         user={user}
+        workspaceMembers={workspaceMembers.map(m => m.user)}
       />
     )
   } catch (error) {

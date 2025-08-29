@@ -24,7 +24,8 @@ import {
   Hash,
   Calendar,
   File,
-  Circle
+  Circle,
+  Bell
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -39,6 +40,7 @@ import { CreateWorkspaceModal } from "@/components/workspace/create-workspace-mo
 import { SearchDialog } from "@/components/search/SearchDialog"
 import { SettingsModal } from "@/components/settings/SettingsModal"
 import { AvatarUpload } from "@/components/ui/avatar-upload"
+import { NotificationButton } from "@/components/notifications/NotificationPanel"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
 
@@ -308,6 +310,7 @@ export function SnapDocsSidebar({ user }: SnapDocsSidebarProps) {
             }
             onClick={() => setShowSearchDialog(true)} 
           />
+          <NotificationButton />
           <SidebarItem 
             icon={<Settings />} 
             label="Settings & members" 
