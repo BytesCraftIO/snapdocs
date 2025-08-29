@@ -126,48 +126,6 @@
   @apply relative min-h-full;
 }
 
-/* BlockV2 System - Clean hover area and handle positioning */
-.block-wrapper {
-  @apply relative;
-}
-
-/* Extend hover area to include the handle space */
-.block-wrapper::before {
-  content: '';
-  position: absolute;
-  left: -3rem; /* Mobile: 48px for handles */
-  right: 0;
-  top: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
-@media (min-width: 768px) {
-  .block-wrapper::before {
-    left: -4rem; /* Desktop: 64px for handles */
-  }
-}
-
-/* Block content area - properly centered */
-.block-content {
-  @apply relative;
-  /* Ensure content doesn't shift when handles appear */
-  margin-left: 0;
-}
-
-/* Handle positioning with negative margins - doesn't affect content flow */
-.block-wrapper .absolute.-left-12 {
-  /* Mobile handle position */
-  left: -3rem;
-}
-
-@media (min-width: 768px) {
-  .block-wrapper .absolute.-left-16 {
-    /* Desktop handle position */
-    left: -4rem;
-  }
-}
 
 /* Responsive typography */
 @layer utilities {

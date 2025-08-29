@@ -54,27 +54,26 @@ export function DatabaseContainer({
       })
     }
     
-    // Apply view filters
-    if (activeView?.filters) {
-      filteredRows = filteredRows.filter(row => {
-        return activeView.filters.every(filter => {
-          const value = row.properties[filter.property]
-          // TODO: Implement proper filter logic based on condition
-          return true
-        })
-      })
-    }
-    
-    // Apply view sorts
+    // Apply view sorts - only for text properties
     if (activeView?.sorts) {
       filteredRows.sort((a, b) => {
         for (const sort of activeView.sorts) {
+          // Find the property and check if it's a text-based property
+          const property = database.properties.find(p => p.id === sort.property)
+          if (!property || !['text', 'email', 'url', 'phone'].includes(property.type)) {
+            continue
+          }
+          
           const aValue = a.properties[sort.property]
           const bValue = b.properties[sort.property]
           
-          let comparison = 0
-          if (aValue < bValue) comparison = -1
-          else if (aValue > bValue) comparison = 1
+          // Handle null/undefined values
+          if (aValue == null && bValue == null) continue
+          if (aValue == null) return sort.direction === 'asc' ? 1 : -1
+          if (bValue == null) return sort.direction === 'asc' ? -1 : 1
+          
+          // For text properties, use string comparison
+          const comparison = String(aValue).localeCompare(String(bValue))
           
           if (comparison !== 0) {
             return sort.direction === 'desc' ? -comparison : comparison
@@ -103,15 +102,15 @@ export function DatabaseContainer({
     }
     
     switch (activeView.type) {
-      case 'table':
+      case 'TABLE':
         return <TableView {...viewProps} />
-      case 'board':
+      case 'BOARD':
         return <BoardView {...viewProps} />
-      case 'list':
+      case 'LIST':
         return <ListView {...viewProps} />
-      case 'calendar':
+      case 'CALENDAR':
         return <CalendarView {...viewProps} />
-      case 'gallery':
+      case 'GALLERY':
         return <GalleryView {...viewProps} />
       default:
         return <TableView {...viewProps} />

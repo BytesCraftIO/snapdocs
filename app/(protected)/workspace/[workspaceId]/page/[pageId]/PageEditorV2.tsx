@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic'
 import { SnapDocsPageHeader } from '@/components/page/snapdocs-page-header'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { useSocket } from '@/lib/socket/client'
+// import { useSocket } from '@/lib/socket/client' // Removed - using Yjs collaboration now
 
 // Dynamically import BlockNoteEditor to avoid SSR hydration issues
 const BlockNoteEditor = dynamic(
@@ -65,7 +65,7 @@ interface PageEditorProps {
 
 export default function PageEditorV2({ page, initialContent, user }: PageEditorProps) {
   const router = useRouter()
-  const { isConnected, joinPage, leavePage } = useSocket()
+  // const { isConnected, joinPage, leavePage } = useSocket() // Removed - using Yjs collaboration now
   const [title, setTitle] = useState(page.title || '')
   const [icon, setIcon] = useState(page.icon || '')
   const [coverImage, setCoverImage] = useState(page.coverImage || '')
@@ -78,22 +78,8 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
 
   const initialBlocks = initialContent?.blocks || []
 
-  // Join the page room for real-time collaboration
-  useEffect(() => {
-    if (isConnected && user) {
-      joinPage(page.id, page.workspaceId, {
-        id: user.id,
-        name: user.name || 'Anonymous',
-        email: user.email || '',
-        avatarUrl: null
-      })
-    }
-    
-    // Clean up when leaving the page
-    return () => {
-      leavePage()
-    }
-  }, [isConnected, page.id, page.workspaceId, user, joinPage, leavePage])
+  // Yjs collaboration is now handled directly in BlockNoteEditor component
+  // No need for Socket.io room joining
 
 
   // Auto-resize title textarea
