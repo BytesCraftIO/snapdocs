@@ -25,6 +25,8 @@ interface PropertyCellProps {
   editable?: boolean
   onChange?: (value: any) => void
   className?: string
+  isEditing?: boolean
+  onStopEditing?: () => void
 }
 
 export function PropertyCell({
@@ -33,7 +35,9 @@ export function PropertyCell({
   row,
   editable = false,
   onChange,
-  className
+  className,
+  isEditing,
+  onStopEditing
 }: PropertyCellProps) {
   const handleChange = (newValue: any) => {
     onChange?.(newValue)

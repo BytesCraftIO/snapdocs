@@ -130,8 +130,7 @@ interface Block {
 ```
 
 Key files:
-- `components/editor/SnapDocsEditor.tsx` - Main editor with drag-and-drop
-- `components/editor/blocks/` - Individual block implementations
+- `components/editor/BlockNoteEditor.tsx` - Main editor using BlockNote
 - `lib/services/page-content.ts` - MongoDB content service
 
 ### Real-Time Collaboration
@@ -175,11 +174,12 @@ Required in `.env.local`:
 
 ## Development Tips
 
-### Adding New Block Types
-1. Add type to `BlockType` union in `types/index.ts`
-2. Create block component in `components/editor/blocks/`
-3. Update `BlockV2.tsx` to handle rendering
-4. Add to slash menu in `SlashMenu.tsx`
+### Editor
+The application uses BlockNote as the main editor, which provides:
+- Rich text editing with slash commands
+- Built-in block types (headings, lists, tables, etc.)
+- File uploads and media embedding
+- Real-time collaboration support
 
 ### Database Operations
 ```typescript

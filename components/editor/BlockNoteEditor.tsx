@@ -1,21 +1,40 @@
 'use client'
 
-import React, { useEffect, useCallback, useRef, useState } from 'react'
+import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react'
 import { 
   BlockNoteEditor,
-  Block as BlockNoteBlock
+  Block as BlockNoteBlock,
+  BlockNoteSchema,
+  defaultBlockSpecs,
+  filterSuggestionItems
 } from '@blocknote/core'
 import { 
-  useCreateBlockNote
+  useCreateBlockNote,
+  createReactBlockSpec,
+  getDefaultReactSlashMenuItems,
+  SuggestionMenuController,
+  DefaultReactSuggestionItem
 } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/mantine'
 import '@blocknote/react/style.css'
 import '@blocknote/mantine/style.css'
 import { Block as AppBlockType } from '@/types'
-import { Save, Clock, AlertCircle } from 'lucide-react'
+import { Save, Clock, AlertCircle, Database } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { useSocket } from '@/lib/socket/client'
+import dynamic from 'next/dynamic'
+import { 
+  createCollaborationProvider, 
+  generateUserColor, 
+  cleanupCollaborationProvider 
+} from '@/lib/collaboration/yjs-provider'
+import type YPartyKitProvider from 'y-partykit/provider'
+
+// Dynamically import DatabaseBlock to avoid SSR issues
+const DatabaseBlock = dynamic(() => import('./DatabaseBlock'), { 
+  ssr: false,
+  loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-lg my-4" />
+})
 
 interface BlockNoteEditorProps {
   pageId: string
@@ -32,6 +51,7 @@ interface BlockNoteEditorProps {
     name?: string | null
     email?: string | null
   }
+  enableCollaboration?: boolean
 }
 
 type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved'
@@ -46,57 +66,154 @@ export default function BlockNoteEditorComponent({
   autoSaveInterval = 5000,
   showSaveStatus = true,
   userId,
-  user
+  user,
+  enableCollaboration = true
 }: BlockNoteEditorProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
-  const [blockPresence, setBlockPresence] = useState<Map<string, { userId: string; userName: string; userColor: string }>>(new Map())
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const previousBlocksRef = useRef<AppBlockType[]>(initialBlocks)
-  const isProcessingRemoteUpdate = useRef(false)
-  const lastSyncedContent = useRef<string>('')
-  const currentFocusedBlock = useRef<string | null>(null)
-  
-  // Socket integration - get all the functions we need
-  const { 
-    isConnected, 
-    sendContentSync,
-    joinPage,
-    leavePage,
-    onContentSync,
-    onBlockUpdate,
-    sendBlockUpdate,
-    sendBlockFocus,
-    sendBlockBlur,
-    onBlockFocus,
-    onBlockBlur,
-    onUserLeft,
-    currentUsers
-  } = useSocket()
+  const collaborationProviderRef = useRef<YPartyKitProvider | null>(null)
+  const [userColor] = useState(() => generateUserColor())
+  const [editorReady, setEditorReady] = useState(false)
 
-  // Convert our blocks to BlockNote format if needed (minimal conversion)
-  const convertToBlockNoteFormat = (blocks: AppBlockType[]): any => {
-    if (!blocks || blocks.length === 0) {
-      return undefined // Let BlockNote use its default initial content
+  // Convert our blocks to BlockNote format
+  const convertToBlockNoteFormat = useCallback((blocks: AppBlockType[]): any => {
+    try {
+      if (!blocks || blocks.length === 0) {
+        // Return undefined to let BlockNote create default content
+        return undefined
+      }
+      
+      // If blocks already have BlockNote structure, return as is
+      if (blocks[0] && 'type' in blocks[0] && 'content' in blocks[0]) {
+        return blocks as any
+      }
+      
+      // Otherwise, convert to basic BlockNote format
+      return blocks.map(block => ({
+        id: block.id || crypto.randomUUID(),
+        type: block.type || 'paragraph',
+        content: block.content || [],
+        props: (block as any).props || block.properties || {},
+        children: block.children || []
+      }))
+    } catch (error) {
+      console.error('Error converting blocks:', error)
+      return undefined
     }
-    
-    // If blocks already have BlockNote structure, return as is
-    if (blocks[0] && 'type' in blocks[0] && 'content' in blocks[0]) {
-      return blocks as any
-    }
-    
-    // Otherwise, convert to basic BlockNote format
-    return blocks.map(block => ({
-      id: block.id,
-      type: block.type || 'paragraph',
-      content: block.content || '',
-      props: (block as any).props || block.properties || {},
-      children: block.children || []
-    }))
-  }
+  }, [])
 
-  // Create the BlockNote editor
+  // Create React database block component
+  const databaseBlockComponent = useMemo(() => createReactBlockSpec(
+    {
+      type: "database" as const,
+      propSchema: {
+        databaseId: {
+          default: "" as const
+        },
+        workspaceId: {
+          default: "" as const
+        },
+        pageId: {
+          default: "" as const
+        },
+        fullPage: {
+          default: false as const
+        },
+        maxRows: {
+          default: 10 as const
+        }
+      } as const,
+      content: "none" as const,
+    },
+    {
+      render: (props: any) => {
+        const data = {
+          databaseId: props.block.props.databaseId || '',
+          workspaceId: props.block.props.workspaceId || workspaceId || '',
+          pageId: props.block.props.pageId || pageId || '',
+          fullPage: props.block.props.fullPage || false,
+          maxRows: props.block.props.maxRows || 10
+        }
+        return <DatabaseBlock 
+          data={data} 
+          editor={props.editor} 
+          blockId={props.block.id}
+          onPropsChange={(newProps: any) => {
+            // Update the block props when database is created
+            const updatedBlock = {
+              ...props.block,
+              props: {
+                ...props.block.props,
+                ...newProps
+              }
+            }
+            props.editor.updateBlock(props.block, updatedBlock)
+          }}
+        />
+      }
+    }
+  ), [workspaceId, pageId])
+
+  // Create custom block specs
+  const customBlockSpecs = useMemo(() => ({
+    ...defaultBlockSpecs,
+    database: databaseBlockComponent,
+  }), [databaseBlockComponent])
+
+  // Create the custom schema
+  const schema = useMemo(() => {
+    return BlockNoteSchema.create({
+      blockSpecs: customBlockSpecs,
+    })
+  }, [customBlockSpecs])
+
+  // Setup collaboration if enabled
+  const collaborationConfig = useMemo(() => {
+    if (!enableCollaboration || !workspaceId || !user?.id) {
+      return undefined
+    }
+
+    try {
+      const collaboration = createCollaborationProvider(
+        pageId,
+        workspaceId,
+        {
+          id: user.id,
+          name: user.name || 'Anonymous',
+          color: userColor
+        }
+      )
+
+      collaborationProviderRef.current = collaboration.provider
+
+      return {
+        provider: collaboration.provider,
+        fragment: collaboration.fragment,
+        user: collaboration.user,
+        showCursorLabels: "activity" as const
+      }
+    } catch (error) {
+      console.error('Failed to setup collaboration:', error)
+      return undefined
+    }
+  }, [enableCollaboration, pageId, workspaceId, user, userColor])
+
+  // Prepare initial content
+  const initialContent = useMemo(() => {
+    // When using collaboration, let Yjs handle initial content
+    if (collaborationConfig) {
+      return undefined
+    }
+    // Otherwise use local initial blocks
+    return convertToBlockNoteFormat(initialBlocks)
+  }, [collaborationConfig, initialBlocks, convertToBlockNoteFormat])
+
+  // Create the BlockNote editor with custom schema and collaboration
   const editor = useCreateBlockNote({
-    initialContent: convertToBlockNoteFormat(initialBlocks),
+    schema,
+    initialContent,
+    collaboration: collaborationConfig,
     uploadFile: async (file: File) => {
       // Handle file uploads
       const formData = new FormData()
@@ -110,169 +227,90 @@ export default function BlockNoteEditorComponent({
       const data = await response.json()
       return data.url
     }
-  })
+  } as any, [schema, initialContent, collaborationConfig])
 
-  // Convert BlockNote blocks back to our storage format (minimal processing)
-  const convertFromBlockNoteFormat = (blocks: BlockNoteBlock[]): AppBlockType[] => {
-    return blocks.map((block, index) => ({
-      id: block.id,
-      type: block.type as any,
-      content: block.content as any || '',
-      properties: block.props || {},
-      children: block.children as any || [],
-      order: index,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    })) as AppBlockType[]
-  }
-
-  // Join the page room on mount
+  // Mark editor as ready
   useEffect(() => {
-    if (pageId && workspaceId && isConnected) {
-      // Use full user object if available, otherwise fallback to userId only
-      const userInfo = user || (userId ? { id: userId, name: null, email: null } : null)
-      if (userInfo) {
-        joinPage(pageId, workspaceId, {
-          id: userInfo.id,
-          name: userInfo.name || 'Anonymous',
-          email: userInfo.email || ''
-        })
+    setEditorReady(true)
+  }, [])
+
+  // Create custom slash menu item for database
+  const insertDatabaseItem = useCallback((editor: BlockNoteEditor) => ({
+    title: 'Database',
+    onItemClick: () => {
+      try {
+        const currentBlock = editor.getTextCursorPosition().block
+        if (currentBlock) {
+          editor.insertBlocks(
+            [{
+              type: 'database',
+              props: {
+                databaseId: '',
+                workspaceId: workspaceId || '',
+                pageId: pageId || '',
+                fullPage: false,
+                maxRows: 10
+              }
+            } as any],
+            currentBlock,
+            'after'
+          )
+        }
+      } catch (error) {
+        console.error('Failed to insert database block:', error)
       }
+    },
+    aliases: ['db', 'table', 'spreadsheet', 'data', 'database'],
+    group: 'Other',
+    icon: <Database size={18} />,
+    subtext: 'Insert a database view',
+  }), [workspaceId, pageId])
+
+  // Get custom slash menu items including database
+  const getCustomSlashMenuItems = useCallback(
+    (editor: BlockNoteEditor): DefaultReactSuggestionItem[] => [
+      ...getDefaultReactSlashMenuItems(editor),
+      insertDatabaseItem(editor),
+    ],
+    [insertDatabaseItem]
+  )
+
+  // Convert BlockNote blocks back to our storage format
+  const convertFromBlockNoteFormat = useCallback((blocks: BlockNoteBlock[]): AppBlockType[] => {
+    try {
+      return blocks.map((block, index) => ({
+        id: block.id,
+        type: block.type as any,
+        content: block.content as any || '',
+        properties: block.props || {},
+        children: block.children as any || [],
+        order: index,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })) as AppBlockType[]
+    } catch (error) {
+      console.error('Error converting from BlockNote format:', error)
+      return []
     }
-    
-    return () => {
-      if (isConnected) {
-        leavePage()
-        // Clear presence on unmount
-        setBlockPresence(new Map())
-      }
-    }
-  }, [pageId, workspaceId, userId, user, isConnected, joinPage, leavePage])
-
-  
-  // Setup real-time listeners for content updates and block presence
-  useEffect(() => {
-    if (!isConnected || !onContentSync || !onBlockUpdate || !onBlockFocus || !onBlockBlur || !onUserLeft) return
-
-    // Listen for full content sync from other users
-    onContentSync((data: any) => {
-      // Don't process our own updates
-      if (data.userId === userId) return
-      
-      // Check if this update is for our current page
-      if (data.pageId !== pageId) return
-      
-      isProcessingRemoteUpdate.current = true
-      
-      // Replace the entire document with the synced content
-      if (data.blocks && Array.isArray(data.blocks)) {
-        const blockNoteBlocks = convertToBlockNoteFormat(data.blocks)
-        if (blockNoteBlocks) {
-          editor.replaceBlocks(editor.document, blockNoteBlocks)
-          previousBlocksRef.current = data.blocks
-        }
-      }
-      
-      setTimeout(() => {
-        isProcessingRemoteUpdate.current = false
-      }, 100)
-    })
-
-    // Listen for individual block updates
-    onBlockUpdate((data: any) => {
-      // Don't process our own updates
-      if (data.userId === userId) return
-      
-      // Check if this update is for our current page
-      if (data.pageId !== pageId) return
-      
-      isProcessingRemoteUpdate.current = true
-      
-      // Update the specific block
-      const currentBlocks = editor.document
-      const updatedBlocks = currentBlocks.map(block => {
-        if (block.id === data.blockId) {
-          return { ...block, content: data.content }
-        }
-        return block
-      })
-      
-      // Update editor with new blocks
-      editor.replaceBlocks(editor.document, updatedBlocks)
-      
-      setTimeout(() => {
-        isProcessingRemoteUpdate.current = false
-      }, 100)
-    })
-    
-    // Listen for block focus events from other users
-    onBlockFocus((data: any) => {
-      // Don't process our own focus events
-      if (data.userId === userId) return
-      
-      setBlockPresence(prev => {
-        const newPresence = new Map(prev)
-        newPresence.set(data.blockId, {
-          userId: data.userId,
-          userName: data.userName,
-          userColor: data.userColor
-        })
-        return newPresence
-      })
-    })
-    
-    // Listen for block blur events from other users
-    onBlockBlur((data: any) => {
-      // Don't process our own blur events
-      if (data.userId === userId) return
-      
-      setBlockPresence(prev => {
-        const newPresence = new Map(prev)
-        // Only remove if this user is the one who had focus
-        const presence = newPresence.get(data.blockId)
-        if (presence && presence.userId === data.userId) {
-          newPresence.delete(data.blockId)
-        }
-        return newPresence
-      })
-    })
-    
-    // Listen for user left events
-    onUserLeft((data: any) => {
-      if (data.userId === userId) return
-      
-      // Remove all presence for the user who left
-      setBlockPresence(prev => {
-        const newPresence = new Map(prev)
-        Array.from(newPresence.entries()).forEach(([blockId, presence]) => {
-          if (presence.userId === data.userId) {
-            newPresence.delete(blockId)
-          }
-        })
-        return newPresence
-      })
-    })
-
-    // No cleanup needed as socket listeners are managed by the socket provider
-  }, [isConnected, onContentSync, onBlockUpdate, onBlockFocus, onBlockBlur, onUserLeft, userId, pageId, editor, convertToBlockNoteFormat])
+  }, [])
 
   // Auto-save functionality
   const performAutoSave = useCallback(async () => {
-    if (readOnly || saveStatus === 'saving') return
-    
-    const blocks = convertFromBlockNoteFormat(editor.document)
-    
-    // Check if content actually changed
-    const currentContent = JSON.stringify(blocks)
-    const previousContent = JSON.stringify(previousBlocksRef.current)
-    if (currentContent === previousContent) {
-      setSaveStatus('saved')
-      return
-    }
-    
-    setSaveStatus('saving')
+    if (readOnly || saveStatus === 'saving' || !editorReady) return
     
     try {
+      const blocks = convertFromBlockNoteFormat(editor.document)
+      
+      // Check if content actually changed
+      const currentContent = JSON.stringify(blocks)
+      const previousContent = JSON.stringify(previousBlocksRef.current)
+      if (currentContent === previousContent) {
+        setSaveStatus('saved')
+        return
+      }
+      
+      setSaveStatus('saving')
+      
       if (onAutoSave) {
         await onAutoSave(blocks)
       } else if (onSave) {
@@ -280,24 +318,19 @@ export default function BlockNoteEditorComponent({
       }
       setSaveStatus('saved')
       previousBlocksRef.current = [...blocks]
-      
-      // Send full sync after save (for other users)
-      const currentUserId = user?.id || userId
-      if (isConnected && currentUserId && !isProcessingRemoteUpdate.current) {
-        sendContentSync(pageId, blocks, currentUserId)
-        lastSyncedContent.current = JSON.stringify(blocks)
-      }
     } catch (error) {
       console.error('Error saving blocks:', error)
       setSaveStatus('error')
       toast.error('Failed to save changes')
     }
-  }, [editor, onAutoSave, onSave, readOnly, saveStatus, isConnected, userId, user, pageId, sendContentSync])
+  }, [editor, onAutoSave, onSave, readOnly, saveStatus, editorReady, convertFromBlockNoteFormat])
 
-  // Handle editor changes and selection changes for block focus
+  // Handle editor changes
   useEffect(() => {
+    if (!editorReady) return
+
     const handleChange = () => {
-      if (!readOnly && !isProcessingRemoteUpdate.current) {
+      if (!readOnly) {
         setSaveStatus('unsaved')
         
         // Clear existing timeout
@@ -309,81 +342,41 @@ export default function BlockNoteEditorComponent({
         autoSaveTimeoutRef.current = setTimeout(() => {
           performAutoSave()
         }, autoSaveInterval)
-        
-        // Send real-time updates for individual block changes
-        const currentUserId = user?.id || userId
-        if (isConnected && currentUserId && !isProcessingRemoteUpdate.current) {
-          const blocks = convertFromBlockNoteFormat(editor.document)
-          const currentContent = JSON.stringify(blocks)
-          
-          // Only send if content changed since last sync
-          if (currentContent !== lastSyncedContent.current) {
-            // For now, send full content sync
-            // You could optimize this to send only changed blocks
-            sendContentSync(pageId, blocks, currentUserId)
-            lastSyncedContent.current = currentContent
-          }
-        }
-      }
-    }
-    
-    // Handle selection changes to detect block focus/blur
-    const handleSelectionChange = () => {
-      const currentUserId = user?.id || userId
-      if (!isConnected || !currentUserId || readOnly) return
-      
-      const selection = editor.getTextCursorPosition()
-      if (selection && selection.block) {
-        const blockId = selection.block.id
-        
-        // If we're focusing on a new block
-        if (currentFocusedBlock.current !== blockId) {
-          // Blur the previous block if there was one
-          if (currentFocusedBlock.current) {
-            sendBlockBlur(pageId, currentFocusedBlock.current, currentUserId)
-          }
-          
-          // Focus the new block
-          sendBlockFocus(pageId, blockId, currentUserId)
-          currentFocusedBlock.current = blockId
-        }
-      } else if (currentFocusedBlock.current) {
-        // No selection, blur the current block
-        sendBlockBlur(pageId, currentFocusedBlock.current, currentUserId)
-        currentFocusedBlock.current = null
       }
     }
 
-    editor.onChange(handleChange)
-    editor.onSelectionChange(handleSelectionChange)
+    const unsubscribe = editor.onChange(handleChange)
     
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current)
       }
-      // Clear focus when unmounting
-      const currentUserId = user?.id || userId
-      if (currentFocusedBlock.current && isConnected && currentUserId) {
-        sendBlockBlur(pageId, currentFocusedBlock.current, currentUserId)
-      }
+      unsubscribe?.()
     }
-  }, [editor, performAutoSave, autoSaveInterval, readOnly, isConnected, userId, user, pageId, sendContentSync, sendBlockFocus, sendBlockBlur])
+  }, [editor, performAutoSave, autoSaveInterval, readOnly, editorReady])
 
-  // Save on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
+      // Clean up auto-save timeout
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current)
       }
+      
       // Perform final save if there are unsaved changes
-      if (saveStatus === 'unsaved' && !readOnly) {
+      if (saveStatus === 'unsaved' && !readOnly && editorReady) {
         const blocks = convertFromBlockNoteFormat(editor.document)
         if (onSave) {
           onSave(blocks)
         }
       }
+      
+      // Clean up collaboration provider
+      if (collaborationProviderRef.current) {
+        cleanupCollaborationProvider(collaborationProviderRef.current)
+      }
     }
-  }, [saveStatus, readOnly, editor, onSave])
+  }, [saveStatus, readOnly, editor, onSave, editorReady, convertFromBlockNoteFormat])
 
   const getSaveStatusIcon = () => {
     switch (saveStatus) {
@@ -411,6 +404,12 @@ export default function BlockNoteEditorComponent({
     }
   }
 
+  if (!editorReady) {
+    return (
+      <div className="h-32 bg-gray-100 animate-pulse rounded-lg my-4" />
+    )
+  }
+
   return (
     <div className="blocknote-editor-container">
       {/* Save status indicator */}
@@ -429,16 +428,23 @@ export default function BlockNoteEditorComponent({
         </div>
       )}
 
-
       <div className="relative">
         <BlockNoteView 
           editor={editor} 
           editable={!readOnly}
           theme="light"
-        />
+          slashMenu={false}
+        >
+          <SuggestionMenuController
+            triggerCharacter="/"
+            getItems={async (query) => 
+              filterSuggestionItems(getCustomSlashMenuItems(editor), query)
+            }
+          />
+        </BlockNoteView>
       </div>
       
-      {/* Custom styles to align content with title and position presence indicators */}
+      {/* Custom styles to align content with title */}
       <style jsx global>{`
         .bn-container .bn-editor {
           padding-left: 0 !important;
@@ -462,32 +468,7 @@ export default function BlockNoteEditorComponent({
           left: 28px !important;
         }
         
-        /* Highlight blocks being edited by other users */
-        ${Array.from(blockPresence.entries()).map(([blockId, presence]) => `
-          .bn-block-outer[data-id="${blockId}"] {
-            position: relative;
-            background: linear-gradient(to right, 
-              ${presence.userColor}10 0%, 
-              ${presence.userColor}05 100%);
-            border-left: 2px solid ${presence.userColor};
-            padding-left: 8px;
-            margin-left: -60px !important;
-          }
-          
-          .bn-block-outer[data-id="${blockId}"]::before {
-            content: "${presence.userName.split(' ')[0]}";
-            position: absolute;
-            left: -90px;
-            top: 2px;
-            background: ${presence.userColor};
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
-            white-space: nowrap;
-          }
-        `).join('')}
+        /* Collaboration cursor styles are handled automatically by BlockNote */
       `}</style>
     </div>
   )

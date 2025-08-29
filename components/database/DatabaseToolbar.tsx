@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Database, DatabaseView } from "@/types"
+import { PropertyManager } from "./PropertyManager"
 import { cn } from "@/lib/utils"
 import { 
   Table, 
@@ -10,11 +11,9 @@ import {
   Calendar, 
   Grid3X3, 
   Search, 
-  Filter, 
-  ArrowUpDown, 
   Plus,
   MoreHorizontal,
-  ChevronDown
+  Settings
 } from "lucide-react"
 import { 
   DropdownMenu,
@@ -22,8 +21,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 
 interface DatabaseToolbarProps {
   database: Database
@@ -34,22 +31,12 @@ interface DatabaseToolbarProps {
   editable?: boolean
 }
 
-const viewIcons = {
-  table: Table,
-  board: Kanban,
-  list: List,
-  calendar: Calendar,
-  gallery: Grid3X3,
-  timeline: List // Placeholder
-}
-
-const viewLabels = {
-  table: 'Table',
-  board: 'Board',
-  list: 'List',
-  calendar: 'Calendar',
-  gallery: 'Gallery',
-  timeline: 'Timeline'
+const viewIcons: Record<string, any> = {
+  TABLE: Table,
+  BOARD: Kanban,
+  LIST: List,
+  CALENDAR: Calendar,
+  GALLERY: Grid3X3
 }
 
 export function DatabaseToolbar({
@@ -60,166 +47,127 @@ export function DatabaseToolbar({
   onSearchChange,
   editable = true
 }: DatabaseToolbarProps) {
-  const [showFilters, setShowFilters] = useState(false)
-  const [showSorts, setShowSorts] = useState(false)
+  const [showPropertyManager, setShowPropertyManager] = useState(false)
 
   const handleViewChange = (view: DatabaseView) => {
     onViewChange?.(view)
   }
 
-  const activeFilters = currentView?.filters?.length || 0
-  const activeSorts = currentView?.sorts?.length || 0
+  const handleSaveProperties = async (properties: any) => {
+    try {
+      const response = await fetch(`/api/databases/${database.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ properties })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update database properties')
+      }
+      
+      // Reload database or update local state
+      window.location.reload() // Simple refresh for now
+    } catch (error) {
+      console.error('Error updating properties:', error)
+    }
+  }
 
   return (
-    <div className="border-b border-gray-200 bg-white">
-      <div className="flex items-center justify-between p-3 gap-4">
+    <div className="border-b border-gray-100">
+      <div className="flex items-center justify-between px-3 py-1 gap-3">
         {/* Left section - Views and controls */}
-        <div className="flex items-center gap-2">
-          {/* View switcher */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                {currentView && (
-                  <>
-                    {(() => {
-                      const Icon = viewIcons[currentView.type]
-                      return <Icon className="w-4 h-4" />
-                    })()}
-                    {currentView.name}
-                  </>
-                )}
-                <ChevronDown className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
-              {database.views.map((view) => {
-                const Icon = viewIcons[view.type]
-                const isActive = currentView?.id === view.id
-                
-                return (
-                  <DropdownMenuItem
-                    key={view.id}
-                    onClick={() => handleViewChange(view)}
-                    className={cn(
-                      "gap-2",
-                      isActive && "bg-blue-50 text-blue-700"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{view.name}</span>
-                  </DropdownMenuItem>
-                )
-              })}
-              
-              {editable && (
-                <>
-                  <div className="border-t border-gray-200 my-1" />
-                  <DropdownMenuItem className="gap-2 text-blue-600">
-                    <Plus className="w-4 h-4" />
-                    <span>Add a view</span>
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Filter button */}
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              "gap-2",
-              activeFilters > 0 && "bg-blue-50 border-blue-200 text-blue-700"
-            )}
-          >
-            <Filter className="w-4 h-4" />
-            Filter
-            {activeFilters > 0 && (
-              <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs font-medium">
-                {activeFilters}
-              </span>
-            )}
-          </Button>
-
-          {/* Sort button */}
-          <Button
-            variant="outline"
-            onClick={() => setShowSorts(!showSorts)}
-            className={cn(
-              "gap-2",
-              activeSorts > 0 && "bg-blue-50 border-blue-200 text-blue-700"
-            )}
-          >
-            <ArrowUpDown className="w-4 h-4" />
-            Sort
-            {activeSorts > 0 && (
-              <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs font-medium">
-                {activeSorts}
-              </span>
-            )}
-          </Button>
+        <div className="flex items-center gap-1">
+          {/* View tabs - Notion style */}
+          <div className="flex items-center">
+            {database.views.map((dbView) => {
+              const Icon = viewIcons[dbView.type] || Table
+              const isActive = currentView?.id === dbView.id
+              return (
+                <button
+                  key={dbView.id}
+                  onClick={() => handleViewChange(dbView)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1 text-sm transition-all rounded",
+                    isActive 
+                      ? "bg-gray-100 text-gray-900 font-medium" 
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{dbView.name}</span>
+                </button>
+              )
+            })}
+            
+            {/* Add view button */}
+            <button 
+              className="ml-0.5 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded transition-colors"
+              title="Add a view"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {/* Properties button */}
+          {editable && (
+            <>
+              <div className="h-3.5 w-px bg-gray-200 mx-0.5" />
+              <button
+                onClick={() => setShowPropertyManager(true)}
+                className="flex items-center gap-1 px-2 py-0.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded transition-all"
+              >
+                <Settings className="w-3 h-3" />
+                <span>Properties</span>
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Right section - Search and actions */}
+        {/* Right section - Search and menu */}
         <div className="flex items-center gap-2">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Search..."
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            <input
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9 w-64"
+              placeholder="Search"
+              className={cn(
+                "pl-8 pr-3 py-1 text-sm w-44",
+                "border rounded-md transition-all outline-none",
+                "placeholder:text-gray-400",
+                searchQuery 
+                  ? "border-gray-300 bg-white" 
+                  : "border-transparent hover:border-gray-200 focus:border-gray-300 hover:bg-gray-50 focus:bg-white"
+              )}
             />
           </div>
 
-          {/* Add property button */}
-          {editable && (
-            <Button variant="outline" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Property
-            </Button>
-          )}
-
-          {/* More options */}
+          {/* Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <button className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded transition-colors">
                 <MoreHorizontal className="w-4 h-4" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Export</DropdownMenuItem>
-              <DropdownMenuItem>Import</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              {editable && (
-                <>
-                  <div className="border-t border-gray-200 my-1" />
-                  <DropdownMenuItem className="text-red-600">
-                    Delete database
-                  </DropdownMenuItem>
-                </>
-              )}
+            <DropdownMenuContent align="end" className="text-sm">
+              <DropdownMenuItem className="text-sm">Export view</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm">Duplicate view</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-red-600">Delete view</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      {/* Filter/Sort panels */}
-      {showFilters && (
-        <div className="border-t border-gray-200 p-3 bg-gray-50">
-          <div className="text-sm text-gray-600">
-            Filter configuration would go here
-          </div>
-        </div>
-      )}
-
-      {showSorts && (
-        <div className="border-t border-gray-200 p-3 bg-gray-50">
-          <div className="text-sm text-gray-600">
-            Sort configuration would go here
-          </div>
-        </div>
+      {/* Property Manager Dialog */}
+      {showPropertyManager && (
+        <PropertyManager
+          properties={database.properties || []}
+          open={showPropertyManager}
+          onOpenChange={setShowPropertyManager}
+          onSaveProperties={handleSaveProperties}
+        />
       )}
     </div>
   )

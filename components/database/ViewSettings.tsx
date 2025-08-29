@@ -170,7 +170,7 @@ export function ViewSettings({ database, view, onViewChange }: ViewSettingsProps
                 </div>
 
                 {/* Width setting for table view */}
-                {view.type === 'table' && isVisible && (
+                {view.type === 'TABLE' && isVisible && (
                   <div className="flex items-center gap-2">
                     <Label htmlFor={`width-${property.id}`} className="text-xs text-gray-500">
                       Width
@@ -194,7 +194,7 @@ export function ViewSettings({ database, view, onViewChange }: ViewSettingsProps
       </div>
 
       {/* View-specific settings */}
-      {view.type === 'board' && (
+      {view.type === 'BOARD' && (
         <>
           <Separator />
           <div className="space-y-4">
@@ -235,7 +235,7 @@ export function ViewSettings({ database, view, onViewChange }: ViewSettingsProps
         </>
       )}
 
-      {view.type === 'calendar' && (
+      {view.type === 'CALENDAR' && (
         <>
           <Separator />
           <div className="space-y-4">
@@ -263,7 +263,7 @@ export function ViewSettings({ database, view, onViewChange }: ViewSettingsProps
         </>
       )}
 
-      {view.type === 'gallery' && (
+      {view.type === 'GALLERY' && (
         <>
           <Separator />
           <div className="space-y-4">
