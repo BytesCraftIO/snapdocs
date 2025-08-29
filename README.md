@@ -57,12 +57,16 @@ SnapDocs is a **self-hostable, open-source document workspace ** that empowers t
 - **Live Presence** - See who's viewing and editing in real-time
 - **Instant Sync** - Changes update across all users immediately
 - **User Avatars** - Visual indicators showing active collaborators
+- **@Mentions** - Tag team members with notifications
+- **Activity Notifications** - Get notified when mentioned or when pages are updated
 
 ### 🏢 **Workspace Management**
 - **Multiple Workspaces** - Organize content into separate workspaces
 - **Member Management** - Invite team members and manage permissions
 - **Page Organization** - Sidebar navigation with nested page structure
 - **Favorites** - Quick access to important pages
+- **Database Views** - Create structured databases within pages with table views
+- **Custom Properties** - Add custom fields to database entries
 
 ### 🎨 **User Experience**
 - **Search** - Quick search across all your content
@@ -295,10 +299,12 @@ pnpm typecheck
 
 ## 🗺️ Roadmap
 
+- [x] **Database Views** - Table views within pages
+- [x] **Mentions & Notifications** - Tag team members and get notified
 - [ ] **Mobile Apps** - iOS and Android applications
 - [ ] **API Access** - REST API for third-party integrations
 - [ ] **Advanced Permissions** - Granular access control
-- [ ] **Database Views** - Table, Kanban, Calendar views
+- [ ] **Additional Database Views** - Kanban, Calendar, Gallery views
 - [ ] **Templates** - Pre-built page templates
 - [ ] **Webhooks** - Integration with external services
 - [ ] **Export Options** - PDF, Markdown, HTML export
@@ -310,10 +316,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Inspired by [Notion](https://notion.so)
 - UI components from [shadcn/ui](https://ui.shadcn.com)
 - Icons from [Lucide](https://lucide.dev)
-- Block editor inspiration from [BlockNote](https://blocknote.dev)
+- Block editor powered by [BlockNote](https://blocknote.dev)
 
 ## 💬 Community & Support
 
