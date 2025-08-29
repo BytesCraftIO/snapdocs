@@ -6,6 +6,7 @@ import {
   Block as BlockNoteBlock,
   BlockNoteSchema,
   defaultBlockSpecs,
+  defaultInlineContentSpecs,
   filterSuggestionItems
 } from '@blocknote/core'
 import { 
@@ -29,6 +30,7 @@ import {
   cleanupCollaborationProvider 
 } from '@/lib/collaboration/yjs-provider'
 import type YPartyKitProvider from 'y-partykit/provider'
+import { Mention } from './Mention'
 
 // Dynamically import DatabaseBlock to avoid SSR issues
 const DatabaseBlock = dynamic(() => import('./DatabaseBlock'), { 
@@ -52,6 +54,11 @@ interface BlockNoteEditorProps {
     email?: string | null
   }
   enableCollaboration?: boolean
+  workspaceMembers?: Array<{
+    id: string
+    name?: string | null
+    email?: string | null
+  }>
 }
 
 type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved'
@@ -67,7 +74,8 @@ export default function BlockNoteEditorComponent({
   showSaveStatus = true,
   userId,
   user,
-  enableCollaboration = true
+  enableCollaboration = true,
+  workspaceMembers = []
 }: BlockNoteEditorProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -165,6 +173,10 @@ export default function BlockNoteEditorComponent({
   const schema = useMemo(() => {
     return BlockNoteSchema.create({
       blockSpecs: customBlockSpecs,
+      inlineContentSpecs: {
+        ...defaultInlineContentSpecs,
+        mention: Mention,
+      },
     })
   }, [customBlockSpecs])
 
@@ -273,6 +285,36 @@ export default function BlockNoteEditorComponent({
       insertDatabaseItem(editor),
     ],
     [insertDatabaseItem]
+  )
+
+  // Get mention menu items from workspace members
+  const getMentionMenuItems = useCallback(
+    (editor: any): DefaultReactSuggestionItem[] => {
+      // Include the current user
+      const allUsers = [
+        ...(user ? [user] : []),
+        ...workspaceMembers.filter(member => member.id !== user?.id)
+      ]
+
+      return allUsers.map((member) => ({
+        title: member.name || member.email || 'Unknown User',
+        onItemClick: () => {
+          editor.insertInlineContent([
+            {
+              type: "mention",
+              props: {
+                user: member.name || member.email || 'Unknown',
+                userId: member.id,
+                email: member.email || undefined
+              },
+            },
+            " ", // add a space after the mention
+          ])
+        },
+        subtext: member.email || undefined,
+      }))
+    },
+    [user, workspaceMembers]
   )
 
   // Convert BlockNote blocks back to our storage format
@@ -439,6 +481,12 @@ export default function BlockNoteEditorComponent({
             triggerCharacter="/"
             getItems={async (query) => 
               filterSuggestionItems(getCustomSlashMenuItems(editor), query)
+            }
+          />
+          <SuggestionMenuController
+            triggerCharacter="@"
+            getItems={async (query) =>
+              filterSuggestionItems(getMentionMenuItems(editor as any), query)
             }
           />
         </BlockNoteView>

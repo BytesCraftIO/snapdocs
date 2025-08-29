@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { signIn, getSession, useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,13 +15,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
 
   useEffect(() => {
+    // Check for error messages in URL
+    const error = searchParams.get('error')
+    if (error === 'InvalidSession') {
+      toast.error('Your session has expired. Please login again.')
+    }
+    
     if (status === "authenticated") {
       router.push("/dashboard")
     }
-  }, [status, router])
+  }, [status, router, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

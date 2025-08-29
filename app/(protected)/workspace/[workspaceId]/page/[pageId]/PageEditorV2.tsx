@@ -61,9 +61,14 @@ interface PageEditorProps {
     name?: string | null
     email?: string | null
   }
+  workspaceMembers?: Array<{
+    id: string
+    name?: string | null
+    email?: string | null
+  }>
 }
 
-export default function PageEditorV2({ page, initialContent, user }: PageEditorProps) {
+export default function PageEditorV2({ page, initialContent, user, workspaceMembers = [] }: PageEditorProps) {
   const router = useRouter()
   // const { isConnected, joinPage, leavePage } = useSocket() // Removed - using Yjs collaboration now
   const [title, setTitle] = useState(page.title || '')
@@ -316,6 +321,7 @@ export default function PageEditorV2({ page, initialContent, user }: PageEditorP
               autoSaveInterval={2000}
               userId={user?.id}
               user={user}
+              workspaceMembers={workspaceMembers}
             />
           </div>
         </div>
