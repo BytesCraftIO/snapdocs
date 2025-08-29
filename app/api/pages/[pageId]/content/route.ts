@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db/prisma'
 import { pageContentService } from '@/lib/services/page-content'
 import { Block } from '@/types'
 import { ensureMentionsPopulated } from '@/lib/utils/mentions'
+import { NotificationService } from '@/lib/services/notification'
 
 // GET /api/pages/[pageId]/content - Get page content
 export async function GET(
@@ -135,6 +136,14 @@ export async function PUT(
 
     // Save content immediately (optimized for real-time collaboration)
     const savedContent = await pageContentService.savePageContent(pageId, blocks, user.id)
+
+    // Process mentions and create notifications
+    await NotificationService.processMentionsInContent(
+      blocks,
+      pageId,
+      page.workspaceId,
+      user.id
+    )
 
     // Update page metadata in PostgreSQL
     await prisma.page.update({

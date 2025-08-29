@@ -298,7 +298,7 @@ export default function BlockNoteEditorComponent({
 
       return allUsers.map((member) => ({
         title: member.name || member.email || 'Unknown User',
-        onItemClick: () => {
+        onItemClick: async () => {
           editor.insertInlineContent([
             {
               type: "mention",
@@ -310,11 +310,29 @@ export default function BlockNoteEditorComponent({
             },
             " ", // add a space after the mention
           ])
+          
+          // Send notification for the mention
+          if (member.id !== user?.id) {
+            try {
+              await fetch('/api/notifications/mention', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: member.id,
+                  pageId,
+                  workspaceId,
+                  message: `mentioned you in a document`
+                })
+              })
+            } catch (error) {
+              console.error('Failed to send mention notification:', error)
+            }
+          }
         },
         subtext: member.email || undefined,
       }))
     },
-    [user, workspaceMembers]
+    [user, workspaceMembers, pageId, workspaceId]
   )
 
   // Convert BlockNote blocks back to our storage format
