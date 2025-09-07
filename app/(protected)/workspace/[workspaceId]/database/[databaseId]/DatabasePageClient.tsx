@@ -142,6 +142,17 @@ export function DatabasePageClient({ database: initialDatabase, workspaceId }: D
     }
   }, [database.id])
 
+  const handleViewCreate = useCallback(async (newView: DatabaseView) => {
+    // Add the new view to the database and set it as current
+    setDatabase(prev => ({
+      ...prev,
+      views: [...prev.views, newView]
+    }))
+    
+    setCurrentView(newView)
+    toast.success('View created successfully')
+  }, [])
+
   return (
     <div className="h-screen flex flex-col">
       {/* Database header */}
@@ -166,6 +177,7 @@ export function DatabasePageClient({ database: initialDatabase, workspaceId }: D
           rows={database.rows}
           currentView={currentView}
           onViewChange={handleViewChange}
+          onViewCreate={handleViewCreate}
           onRowUpdate={handleRowUpdate}
           onRowCreate={handleRowCreate}
           onRowDelete={handleRowDelete}

@@ -8,6 +8,7 @@ import { BoardView } from "./BoardView"
 import { ListView } from "./ListView"
 import { CalendarView } from "./CalendarView"
 import { GalleryView } from "./GalleryView"
+import { TimelineView } from "./TimelineView"
 import { cn } from "@/lib/utils"
 
 interface DatabaseContainerProps {
@@ -15,6 +16,7 @@ interface DatabaseContainerProps {
   rows: DatabaseRow[]
   currentView?: DatabaseView
   onViewChange?: (view: DatabaseView) => void
+  onViewCreate?: (view: DatabaseView) => void
   onRowUpdate?: (rowId: string, updates: any) => void
   onRowCreate?: (row: Partial<DatabaseRow>) => void
   onRowDelete?: (rowId: string) => void
@@ -27,6 +29,7 @@ export function DatabaseContainer({
   rows,
   currentView,
   onViewChange,
+  onViewCreate,
   onRowUpdate,
   onRowCreate,
   onRowDelete,
@@ -112,6 +115,8 @@ export function DatabaseContainer({
         return <CalendarView {...viewProps} />
       case 'GALLERY':
         return <GalleryView {...viewProps} />
+      case 'TIMELINE':
+        return <TimelineView {...viewProps} />
       default:
         return <TableView {...viewProps} />
     }
@@ -123,6 +128,7 @@ export function DatabaseContainer({
         database={database}
         currentView={activeView}
         onViewChange={onViewChange}
+        onViewCreate={onViewCreate}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         editable={editable}

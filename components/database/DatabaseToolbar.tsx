@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Database, DatabaseView } from "@/types"
+import { Database, DatabaseView, DatabaseViewType } from "@/types"
 import { PropertyManager } from "./PropertyManager"
+import { CreateViewDialog } from "./CreateViewDialog"
 import { cn } from "@/lib/utils"
 import { 
   Table, 
@@ -10,6 +11,7 @@ import {
   List, 
   Calendar, 
   Grid3X3, 
+  Clock,
   Search, 
   Plus,
   MoreHorizontal,
@@ -26,6 +28,7 @@ interface DatabaseToolbarProps {
   database: Database
   currentView?: DatabaseView
   onViewChange?: (view: DatabaseView) => void
+  onViewCreate?: (view: DatabaseView) => void
   searchQuery: string
   onSearchChange: (query: string) => void
   editable?: boolean
@@ -36,18 +39,21 @@ const viewIcons: Record<string, any> = {
   BOARD: Kanban,
   LIST: List,
   CALENDAR: Calendar,
-  GALLERY: Grid3X3
+  GALLERY: Grid3X3,
+  TIMELINE: Clock
 }
 
 export function DatabaseToolbar({
   database,
   currentView,
   onViewChange,
+  onViewCreate,
   searchQuery,
   onSearchChange,
   editable = true
 }: DatabaseToolbarProps) {
   const [showPropertyManager, setShowPropertyManager] = useState(false)
+  const [showCreateView, setShowCreateView] = useState(false)
 
   const handleViewChange = (view: DatabaseView) => {
     onViewChange?.(view)
@@ -71,6 +77,40 @@ export function DatabaseToolbar({
       window.location.reload() // Simple refresh for now
     } catch (error) {
       console.error('Error updating properties:', error)
+    }
+  }
+
+  const handleCreateView = async (name: string, type: DatabaseViewType) => {
+    try {
+      const response = await fetch(`/api/databases/${database.id}/views`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, type })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create view')
+      }
+
+      const newView = await response.json()
+      
+      // Transform the view to match client types
+      const transformedView = {
+        ...newView,
+        type: newView.type.toLowerCase() as DatabaseViewType,
+        filters: [],
+        sorts: [],
+        properties: {},
+        config: newView.config || {}
+      }
+
+      // Call the parent callback to update the database state
+      onViewCreate?.(transformedView)
+    } catch (error) {
+      console.error('Error creating view:', error)
+      throw error
     }
   }
 
@@ -105,6 +145,7 @@ export function DatabaseToolbar({
             <button 
               className="ml-0.5 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded transition-colors"
               title="Add a view"
+              onClick={() => setShowCreateView(true)}
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -167,6 +208,15 @@ export function DatabaseToolbar({
           open={showPropertyManager}
           onOpenChange={setShowPropertyManager}
           onSaveProperties={handleSaveProperties}
+        />
+      )}
+
+      {/* Create View Dialog */}
+      {showCreateView && (
+        <CreateViewDialog
+          open={showCreateView}
+          onOpenChange={setShowCreateView}
+          onCreateView={handleCreateView}
         />
       )}
     </div>

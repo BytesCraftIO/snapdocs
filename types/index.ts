@@ -146,7 +146,7 @@ export interface PageContent {
 }
 
 // Database types
-export type DatabaseViewType = 'TABLE' | 'BOARD' | 'LIST' | 'CALENDAR' | 'GALLERY'
+export type DatabaseViewType = 'TABLE' | 'BOARD' | 'LIST' | 'CALENDAR' | 'GALLERY' | 'TIMELINE'
 
 export type DatabasePropertyType = 
   | 'text' 
