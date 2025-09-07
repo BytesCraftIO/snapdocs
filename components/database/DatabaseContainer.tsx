@@ -17,6 +17,7 @@ interface DatabaseContainerProps {
   currentView?: DatabaseView
   onViewChange?: (view: DatabaseView) => void
   onViewCreate?: (view: DatabaseView) => void
+  onViewDelete?: (viewId: string) => void
   onRowUpdate?: (rowId: string, updates: any) => void
   onRowCreate?: (row: Partial<DatabaseRow>) => void
   onRowDelete?: (rowId: string) => void
@@ -30,6 +31,7 @@ export function DatabaseContainer({
   currentView,
   onViewChange,
   onViewCreate,
+  onViewDelete,
   onRowUpdate,
   onRowCreate,
   onRowDelete,
@@ -129,6 +131,7 @@ export function DatabaseContainer({
         currentView={activeView}
         onViewChange={onViewChange}
         onViewCreate={onViewCreate}
+        onViewDelete={onViewDelete}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         editable={editable}

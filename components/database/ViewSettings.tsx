@@ -303,6 +303,34 @@ export function ViewSettings({ database, view, onViewChange }: ViewSettingsProps
           </div>
         </>
       )}
+
+      {view.type === 'TIMELINE' && (
+        <>
+          <Separator />
+          <div className="space-y-4">
+            <h3 className="font-medium">Timeline Settings</h3>
+            
+            <div className="space-y-2">
+              <Label>Date property</Label>
+              <select
+                value={view.config.dateProperty || ''}
+                onChange={(e) => updateViewConfig({ dateProperty: e.target.value || undefined })}
+                className="w-full p-2 border rounded-md text-sm"
+              >
+                <option value="">Auto-detect first date property</option>
+                {database.properties
+                  .filter(p => p.type === 'date')
+                  .map(property => (
+                    <option key={property.id} value={property.id}>
+                      {property.name}
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

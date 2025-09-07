@@ -29,6 +29,7 @@ interface DatabaseToolbarProps {
   currentView?: DatabaseView
   onViewChange?: (view: DatabaseView) => void
   onViewCreate?: (view: DatabaseView) => void
+  onViewDelete?: (viewId: string) => void
   searchQuery: string
   onSearchChange: (query: string) => void
   editable?: boolean
@@ -48,6 +49,7 @@ export function DatabaseToolbar({
   currentView,
   onViewChange,
   onViewCreate,
+  onViewDelete,
   searchQuery,
   onSearchChange,
   editable = true
@@ -111,6 +113,78 @@ export function DatabaseToolbar({
     } catch (error) {
       console.error('Error creating view:', error)
       throw error
+    }
+  }
+
+  const handleDeleteView = async () => {
+    if (!currentView) return
+
+    // Don't allow deleting the last view
+    if (database.views.length <= 1) {
+      alert('Cannot delete the last view')
+      return
+    }
+
+    if (!confirm(`Are you sure you want to delete the view "${currentView.name}"?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/databases/${database.id}/views/${currentView.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete view')
+      }
+
+      // Call the parent callback to update the database state
+      onViewDelete?.(currentView.id)
+    } catch (error) {
+      console.error('Error deleting view:', error)
+      alert('Failed to delete view. Please try again.')
+    }
+  }
+
+  const handleDuplicateView = async () => {
+    if (!currentView) return
+
+    const duplicateName = `${currentView.name} (Copy)`
+
+    try {
+      const response = await fetch(`/api/databases/${database.id}/views`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: duplicateName,
+          type: currentView.type.toUpperCase(),
+          config: currentView.config
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to duplicate view')
+      }
+
+      const newView = await response.json()
+      
+      // Transform the view to match client types
+      const transformedView = {
+        ...newView,
+        type: newView.type.toLowerCase() as DatabaseViewType,
+        filters: currentView.filters || [],
+        sorts: currentView.sorts || [],
+        properties: currentView.properties || {},
+        config: newView.config || {}
+      }
+
+      // Call the parent callback to update the database state
+      onViewCreate?.(transformedView)
+    } catch (error) {
+      console.error('Error duplicating view:', error)
+      alert('Failed to duplicate view. Please try again.')
     }
   }
 
@@ -193,9 +267,16 @@ export function DatabaseToolbar({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="text-sm">
-              <DropdownMenuItem className="text-sm">Export view</DropdownMenuItem>
-              <DropdownMenuItem className="text-sm">Duplicate view</DropdownMenuItem>
-              <DropdownMenuItem className="text-sm text-red-600">Delete view</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm" onClick={handleDuplicateView}>
+                Duplicate view
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-sm text-red-600" 
+                onClick={handleDeleteView}
+                disabled={database.views.length <= 1}
+              >
+                Delete view
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

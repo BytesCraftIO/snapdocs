@@ -153,6 +153,24 @@ export function DatabasePageClient({ database: initialDatabase, workspaceId }: D
     toast.success('View created successfully')
   }, [])
 
+  const handleViewDelete = useCallback(async (viewId: string) => {
+    // Remove the view from the database
+    setDatabase(prev => ({
+      ...prev,
+      views: prev.views.filter(view => view.id !== viewId)
+    }))
+    
+    // If the deleted view was the current view, switch to the first remaining view
+    if (currentView?.id === viewId) {
+      const remainingViews = database.views.filter(view => view.id !== viewId)
+      if (remainingViews.length > 0) {
+        setCurrentView(remainingViews[0])
+      }
+    }
+    
+    toast.success('View deleted successfully')
+  }, [currentView, database.views])
+
   return (
     <div className="h-screen flex flex-col">
       {/* Database header */}
@@ -178,6 +196,7 @@ export function DatabasePageClient({ database: initialDatabase, workspaceId }: D
           currentView={currentView}
           onViewChange={handleViewChange}
           onViewCreate={handleViewCreate}
+          onViewDelete={handleViewDelete}
           onRowUpdate={handleRowUpdate}
           onRowCreate={handleRowCreate}
           onRowDelete={handleRowDelete}
